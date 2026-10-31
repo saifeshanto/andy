@@ -3,15 +3,21 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
-  "engines": { "node": ">=20.19" },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
     "dev": "npm run dev -w @andy/api & npm run dev -w @andy/web",
     "build": "npm run build -w @andy/shared && npm run build -w @andy/web && npm run build -w @andy/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run typecheck",
-    "bundle:hostinger": "npm run build && node scripts/bundle-hostinger.mjs"
+    "bundle:hostinger": "npm run build && node scripts/bundle-hostinger.mjs",
+    "start": "node apps/api/dist/server.js"
   },
   "devDependencies": {
     "typescript": "5.9.3",
