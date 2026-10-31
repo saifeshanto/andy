@@ -30,12 +30,28 @@ Hostinger builds the app straight from the GitHub branch.
 | `MAIL_FROM` | e.g. `Andy Auto Club <no-reply@yourdomain.com>` |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | `smtp.hostinger.com` / `465` / `true` |
 | `SMTP_USER` / `SMTP_PASSWORD` | the mailbox address and its password |
+| `PAYMENT_PROVIDER` | `billplz` (leave unset or `none` to keep checkout switched off) |
+| `BILLPLZ_SANDBOX` | `true` for testing with a sandbox account, `false` for real money |
+| `BILLPLZ_API_KEY` | Billplz dashboard → Settings → Keys & Integration → API Secret Key |
+| `BILLPLZ_X_SIGNATURE_KEY` | same page → X Signature Key (X Signature must be **enabled**) |
+| `BILLPLZ_COLLECTION_ID` | Billplz dashboard → Billing → the collection to use (e.g. `inbmmepb`) |
 
 Do not set `PORT`; Hostinger provides it.
 
 ## Cron (hPanel → Advanced → Cron Jobs, every 5 minutes)
 
 `curl -fsS -X POST -H "x-cron-secret: <CRON_SECRET>" https://<site domain>/api/v1/internal/cron/tick`
+
+## Billplz
+
+- Sandbox and live accounts are separate, each with its own keys and collection. Use the sandbox on staging.
+- Turn on **X Signature** in Billplz (Settings → Keys & Integration). Payments are refused without a valid signature.
+- Nothing needs entering in Billplz for the callback: the app sends these URLs with each bill:
+  - callback (server to server): `https://<site domain>/api/v1/payments/webhook/billplz`
+  - redirect (customer's browser): `https://<site domain>/api/v1/payments/return/billplz`
+- A payment is only marked paid from a signed callback or from asking Billplz directly. The cron `tick`
+  re-checks bills still pending after 10 minutes, so a missed callback is picked up automatically.
+- Admin → Orders has a **Re-check** button (asks Billplz for the bill's real status) for a single order.
 
 ## First Super Admin
 

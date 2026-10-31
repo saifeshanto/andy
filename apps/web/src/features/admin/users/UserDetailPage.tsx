@@ -56,7 +56,7 @@ export function UserDetailPage() {
       </Link>
       <PageHeader title={u.fullName} description={u.email} actions={<UserStatusBadge status={u.status} />} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="divide-y divide-ink-100 p-0">
+        <Card flush className="divide-y divide-ink-100">
           {(
             [
               ['Phone', u.phone ?? '—'],

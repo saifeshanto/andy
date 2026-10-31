@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { db } from '../src/core/db.js';
+import { ensureDefaultPlan } from '../src/modules/membership/index.js';
 import { syncRbac } from '../src/modules/rbac/index.js';
 
 export const app = createApp();
@@ -10,6 +11,14 @@ export const PASSWORD = 'correct-horse-9';
 /** Empties every table (children first) and re-syncs roles. */
 export async function resetDb() {
   const d = db();
+  await d.membershipReminder.deleteMany();
+  await d.membershipEvent.deleteMany();
+  await d.membership.deleteMany();
+  await d.paymentWebhookLog.deleteMany();
+  await d.payment.deleteMany();
+  await d.orderItem.deleteMany();
+  await d.order.deleteMany();
+  await d.membershipPlan.deleteMany();
   await d.emailOutbox.deleteMany();
   await d.auditLog.deleteMany();
   await d.verificationToken.deleteMany();
@@ -19,6 +28,7 @@ export async function resetDb() {
   await d.jobRun.deleteMany();
   await d.setting.deleteMany();
   await syncRbac(d);
+  await ensureDefaultPlan(d);
 }
 
 /** Pulls the raw token out of the newest queued email to that address. */
