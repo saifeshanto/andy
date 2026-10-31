@@ -1,0 +1,11 @@
+node_modules/
+dist/
+deploy/
+*.zip
+.env
+.env.*
+!.env.example
+apps/api/src/generated/
+coverage/
+*.log
+.DS_Store

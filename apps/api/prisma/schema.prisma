@@ -1,0 +1,60 @@
+// Phase 0 schema: only the system tables needed to prove Prisma + MariaDB + cron on Hostinger.
+// Feature tables are added module by module (see PROJECT_PLAN.md section 7).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+/// Key/value platform settings. Money-related settings are versioned via SettingHistory (later phase).
+model Setting {
+  key         String   @id @db.VarChar(100)
+  value       Json
+  updatedById BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Append-only log of admin and money actions.
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    BigInt?
+  action     String   @db.VarChar(100)
+  entityType String   @db.VarChar(60)
+  entityId   String?  @db.VarChar(60)
+  before     Json?
+  after      Json?
+  ip         String?  @db.VarChar(45)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+enum JobRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+/// One row per cron job run. Used for visibility and to stop overlapping runs.
+model JobRun {
+  id         BigInt       @id @default(autoincrement())
+  job        String       @db.VarChar(60)
+  status     JobRunStatus
+  trigger    String       @db.VarChar(20) // "cli" or "http"
+  startedAt  DateTime     @default(now())
+  finishedAt DateTime?
+  processed  Int          @default(0)
+  error      String?      @db.Text
+
+  @@index([job, startedAt])
+  @@index([job, status])
+}
