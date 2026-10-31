@@ -14,7 +14,8 @@ export function StatusPage() {
   const rows: [string, boolean | null, string][] = [
     ['Website', true, 'This page loaded from the Node.js app'],
     ['API', isLoading ? null : !isError && !!data, data ? `Node ${data.node}, up ${data.uptimeSeconds}s` : 'No response'],
-    ['Database', data ? data.database.ok : null, data?.database.version ?? data?.database.error ?? 'Checking'],
+    ['Database', data ? data.database.ok : null, data?.database.version ??
+        (data?.database.problem ? `${data.database.problem}: ${data.database.hint}` : 'Checking')],
     [
       'Cron',
       data ? !!data.cron.lastHeartbeatAt : null,

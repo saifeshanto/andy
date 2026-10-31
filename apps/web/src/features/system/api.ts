@@ -5,7 +5,7 @@ export interface Health {
   time: string;
   node: string;
   uptimeSeconds: number;
-  database: { ok: boolean; version?: string; error?: string };
+  database: { ok: boolean; version?: string; problem?: string; hint?: string; error?: string };
   cron: { lastHeartbeatAt: string | null };
 }
 
