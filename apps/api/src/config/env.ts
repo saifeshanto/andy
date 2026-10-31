@@ -51,10 +51,25 @@ export type Env = z.infer<typeof EnvSchema>;
 
 let cached: Env | undefined;
 
+/**
+ * Hosting panels (Hostinger included) often save a variable left blank as an empty string.
+ * Treat blank as "not set" so optional settings fall back to their defaults instead of failing validation.
+ */
+export function withoutBlanks(source: NodeJS.ProcessEnv): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(source)) if (v !== undefined && v.trim() !== '') out[k] = v;
+  return out;
+}
+
+/** Test hook: forget the cached config so the next env() call re-reads process.env. */
+export function resetEnvForTests(): void {
+  cached = undefined;
+}
+
 /** Validated environment. Fails fast at startup with a readable message. */
 export function env(): Env {
   if (cached) return cached;
-  const parsed = EnvSchema.safeParse(process.env);
+  const parsed = EnvSchema.safeParse(withoutBlanks(process.env));
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid environment configuration:\n${issues}`);
