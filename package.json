@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "npm run dev -w @andy/api & npm run dev -w @andy/web",
     "build": "npm run build -w @andy/shared && npm run build -w @andy/web && npm run build -w @andy/api",
+    "build:hostinger": "npm install --include=dev --no-audit --no-fund && npm run build",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run typecheck",
