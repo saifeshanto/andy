@@ -58,3 +58,147 @@ model JobRun {
   @@index([job, startedAt])
   @@index([job, status])
 }
+
+// ───────────────────────── Identity & access (Phase 1) ─────────────────────────
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id              BigInt     @id @default(autoincrement())
+  publicId        String     @unique @db.VarChar(24)
+  email           String     @unique @db.VarChar(191)
+  phone           String?    @db.VarChar(32)
+  fullName        String     @db.VarChar(150)
+  passwordHash    String     @db.VarChar(100)
+  status          UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum RoleScope {
+  PLATFORM
+  MERCHANT
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique @db.VarChar(60)
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  scope       RoleScope @default(PLATFORM)
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          Int    @id @default(autoincrement())
+  key         String @unique @db.VarChar(100)
+  description String @db.VarChar(255)
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  userId      BigInt
+  roleId      Int
+  grantedById BigInt?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+/// Refresh tokens are stored hashed. `family` groups a rotation chain so reuse of an old token revokes the chain.
+model RefreshToken {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt
+  family     String    @db.VarChar(40)
+  tokenHash  String    @unique @db.Char(64)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedAt DateTime?
+  userAgent  String?   @db.VarChar(255)
+  ip         String?   @db.VarChar(45)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@index([expiresAt])
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model VerificationToken {
+  id        BigInt                @id @default(autoincrement())
+  userId    BigInt
+  type      VerificationTokenType
+  tokenHash String                @unique @db.Char(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+// ───────────────────────── Notifications (Phase 1) ─────────────────────────
+
+enum EmailStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+/// Outbox: emails are queued inside business transactions and sent by the send-emails cron job.
+model EmailOutbox {
+  id          BigInt      @id @default(autoincrement())
+  toEmail     String      @db.VarChar(191)
+  templateKey String      @db.VarChar(60)
+  subject     String      @db.VarChar(255)
+  bodyHtml    String      @db.Text
+  bodyText    String      @db.Text
+  status      EmailStatus @default(QUEUED)
+  attempts    Int         @default(0)
+  lastError   String?     @db.Text
+  sendAfter   DateTime    @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status, sendAfter])
+  @@index([toEmail])
+}

@@ -34,8 +34,10 @@ so Hostinger does not need to run `npm install` or a build step.
 4. **Start/restart** the app, then open `https://<staging-domain>/status`.
    Website, API and Database should show **OK**. Cron shows "No heartbeat yet" until step 5.
 5. **Cron.** hPanel → Advanced → Cron Jobs → every 5 minutes. Try option A; if hPanel only allows URLs or A fails, use B.
-   - A (command): `cd /home/<user>/domains/<domain>/nodejs && node cron.js heartbeat` (the real app folder path is shown in hPanel / File Manager)
-   - B (HTTP): `curl -fsS -X POST -H "x-cron-secret: <CRON_SECRET>" https://<staging-domain>/api/v1/internal/cron/heartbeat`
+   - A (command): `cd /home/<user>/domains/<domain>/nodejs && node cron.js tick` (the real app folder path is shown in hPanel / File Manager; for a GitHub deploy use `node apps/api/dist/cron.js tick`)
+   - B (HTTP): `curl -fsS -X POST -H "x-cron-secret: <CRON_SECRET>" https://<staging-domain>/api/v1/internal/cron/tick`
+
+   `tick` runs every scheduled job (heartbeat, sending queued emails, cleaning old tokens).
 
    After 5 to 10 minutes, `/status` should show Cron **OK** with a recent heartbeat.
 
