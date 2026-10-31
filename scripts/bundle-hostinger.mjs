@@ -20,10 +20,10 @@ for (const f of readdirSync(path.join(api, 'dist'))) {
 }
 
 // SQL migrations, to import through phpMyAdmin if prisma migrate cannot run on the host.
-mkdirSync(path.join(out, 'migrations'));
+mkdirSync(path.join(out, 'database'));
 for (const dir of readdirSync(path.join(api, 'prisma/migrations'))) {
   const sql = path.join(api, 'prisma/migrations', dir, 'migration.sql');
-  if (existsSync(sql)) cpSync(sql, path.join(out, 'migrations', `${dir}.sql`));
+  if (existsSync(sql)) cpSync(sql, path.join(out, 'database', `${dir}.sql`));
 }
 
 writeFileSync(
@@ -32,16 +32,21 @@ writeFileSync(
     {
       name: 'andy-platform',
       private: true,
+      version: '0.1.0',
       type: 'module',
+      main: 'server.js',
       engines: { node: '>=20.19' },
-      scripts: { start: 'node server.js', cron: 'node cron.js' },
+      scripts: { start: 'node server.js', build: 'echo "Already built"', cron: 'node cron.js' },
+      // Not needed at runtime (everything is bundled into server.js). Listed so Hostinger's
+      // Node.js importer recognises this as an Express app.
+      dependencies: { express: '5.3.0' },
     },
     null,
     2,
   ) + '\n',
 );
 
-cpSync(path.join(root, 'docs/runbooks/hostinger-phase0-test.md'), path.join(out, 'README.md'));
+cpSync(path.join(root, 'docs/runbooks/hostinger-phase0-test.md'), path.join(out, 'DEPLOY_STEPS.md'));
 
 const zip = path.join(root, 'andy-hostinger.zip');
 rmSync(zip, { force: true });

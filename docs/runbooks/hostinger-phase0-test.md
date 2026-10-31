@@ -13,15 +13,19 @@ so Hostinger does not need to run `npm install` or a build step.
 | `server.js` | The app (API + website). Entry file / start command: `node server.js` |
 | `cron.js` | Cron runner: `node cron.js heartbeat` |
 | `public/` | Built React website |
-| `migrations/*.sql` | Database tables, to import in phpMyAdmin |
+| `database/*.sql` | Creates the database tables. Import in phpMyAdmin. (The database itself is created in hPanel, so there is no database file to upload.) |
 | `package.json` | `npm start` runs `node server.js` |
 
 ## Steps
 
 1. **Database.** hPanel → Databases → MySQL/MariaDB → create a database and user (e.g. `u123_andy_staging`).
-   Open phpMyAdmin for it → Import → upload each file in `migrations/` in name order.
-2. **Node.js app.** hPanel → Websites → (staging subdomain) → Node.js → create app → upload the zip.
-   Node version 20 or 22. Entry file `server.js` (or start command `npm start`). No build command.
+   Open phpMyAdmin for it → Import → upload each file in `database/` in name order.
+2. **Node.js app.** Do **not** use the normal "upload website files" / migrate option: that one only accepts
+   PHP or static HTML sites and shows "Your website couldn't be recognized".
+   Instead: hPanel → Websites → Add website → **Node.js Apps** → upload the zip.
+   On the build settings screen: framework **Express** (or Other), Node version 20 or 22,
+   entry file `server.js`, start command `npm start`, build command empty (or `npm run build`, which does nothing),
+   output directory empty / root.
 3. **Environment variables** (hPanel → the Node.js app → Environment variables):
    - `NODE_ENV` = `production`
    - `DATABASE_URL` = `mysql://USER:PASSWORD@localhost:3306/DBNAME` (URL-encode special characters in the password)
