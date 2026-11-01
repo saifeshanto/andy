@@ -457,6 +457,7 @@ model Merchant {
   outlets   MerchantOutlet[]
   documents MerchantDocument[]
   listings  Listing[]
+  campaigns VoucherCampaign[]
 
   @@index([status, submittedAt])
   @@index([createdById])
@@ -524,8 +525,9 @@ model MerchantOutlet {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  merchant Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  listings ListingOutlet[]
+  merchant  Merchant                @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  listings  ListingOutlet[]
+  campaigns VoucherCampaignOutlet[]
 
   @@index([merchantId])
   @@index([state, city])
@@ -656,4 +658,119 @@ model ListingRevision {
 
   @@index([listingId, status])
   @@index([status, createdAt])
+}
+
+// ───────────────────────── Vouchers (Phase 6) ─────────────────────────
+
+enum VoucherBenefitType {
+  FREE_ITEM
+  FIXED_OFF
+  PERCENT_OFF
+}
+
+enum VoucherCampaignStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  ENDED
+}
+
+/// A voucher offer by a merchant, e.g. "Free car wash". Members claim it to get their own Voucher.
+model VoucherCampaign {
+  id           BigInt                @id @default(autoincrement())
+  publicId     String                @unique @db.VarChar(24)
+  merchantId   BigInt
+  slug         String                @unique @db.VarChar(160)
+  title        String                @db.VarChar(150)
+  terms        String                @db.Text
+  benefitType  VoucherBenefitType
+  /// Sen for FIXED_OFF, whole percent for PERCENT_OFF, null for FREE_ITEM.
+  benefitValue Int?
+  memberOnly   Boolean               @default(true)
+  /// Null means unlimited.
+  totalQty     Int?
+  claimedCount Int                   @default(0)
+  perUserLimit Int                   @default(1)
+  claimStartAt DateTime?
+  claimEndAt   DateTime
+  validUntil   DateTime
+  /// If set, a claimed voucher expires this many days after claiming (or at validUntil, if sooner).
+  validDays    Int?
+  status       VoucherCampaignStatus @default(DRAFT)
+  submittedAt  DateTime?
+  reviewedById BigInt?
+  reviewedAt   DateTime?
+  reviewNote   String?               @db.VarChar(1000)
+  publishedAt  DateTime?
+  createdById  BigInt
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  merchant Merchant                @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  outlets  VoucherCampaignOutlet[]
+  vouchers Voucher[]
+
+  @@index([status, claimEndAt])
+  @@index([merchantId, status])
+}
+
+model VoucherCampaignOutlet {
+  campaignId BigInt
+  outletId   BigInt
+
+  campaign VoucherCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  outlet   MerchantOutlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, outletId])
+  @@index([outletId])
+}
+
+enum VoucherStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  VOID
+}
+
+/// One member's claimed voucher, with its own random code (also shown as a QR code).
+model Voucher {
+  id         BigInt        @id @default(autoincrement())
+  code       String        @unique @db.VarChar(16)
+  campaignId BigInt
+  userId     BigInt
+  status     VoucherStatus @default(ACTIVE)
+  claimedAt  DateTime      @default(now())
+  expiresAt  DateTime
+  redeemedAt DateTime?
+
+  campaign    VoucherCampaign     @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  redemptions VoucherRedemption[]
+
+  @@index([userId, status])
+  @@index([campaignId, userId])
+  @@index([status, expiresAt])
+}
+
+/// Who redeemed a voucher, where and when. A reversed redemption stays here for the record.
+model VoucherRedemption {
+  id               BigInt    @id @default(autoincrement())
+  voucherId        BigInt
+  merchantId       BigInt
+  merchantMemberId BigInt
+  staffUserId      BigInt
+  outletId         BigInt
+  ip               String?   @db.VarChar(45)
+  userAgent        String?   @db.VarChar(255)
+  createdAt        DateTime  @default(now())
+  reversedAt       DateTime?
+  reversedById     BigInt?
+  reverseReason    String?   @db.VarChar(500)
+
+  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+
+  @@index([voucherId])
+  @@index([merchantId, createdAt])
+  @@index([staffUserId, createdAt])
 }

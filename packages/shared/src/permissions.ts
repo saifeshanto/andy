@@ -22,6 +22,8 @@ export const PERMISSIONS = {
   'merchants.manage': 'Suspend or reinstate merchants',
   'listings.review': 'Approve or reject merchant listings and listing edits',
   'catalog.manage': 'Manage marketplace categories',
+  'vouchers.review': 'Approve or reject merchant voucher offers',
+  'vouchers.manage': 'Pause or end voucher offers and undo a redemption made by mistake',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -51,6 +53,8 @@ export const SYSTEM_ROLES = {
       'merchants.manage',
       'listings.review',
       'catalog.manage',
+      'vouchers.review',
+      'vouchers.manage',
     ],
   },
   FINANCE: {
