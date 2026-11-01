@@ -202,3 +202,183 @@ model EmailOutbox {
   @@index([status, sendAfter])
   @@index([toEmail])
 }
+
+// ───────────────────────── Membership (Phase 2) ─────────────────────────
+
+/// Price history is kept by creating a new plan and deactivating the old one; never edit priceSen in place.
+model MembershipPlan {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique @db.VarChar(40)
+  name           String   @db.VarChar(100)
+  priceSen       Int
+  durationMonths Int
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+model Membership {
+  id            BigInt           @id @default(autoincrement())
+  userId        BigInt
+  planId        Int
+  status        MembershipStatus
+  startAt       DateTime
+  endAt         DateTime
+  sourceOrderId BigInt?          @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  plan      MembershipPlan       @relation(fields: [planId], references: [id], onDelete: Restrict)
+  events    MembershipEvent[]
+  reminders MembershipReminder[]
+
+  @@index([userId, status])
+  @@index([status, endAt])
+}
+
+enum MembershipEventType {
+  ACTIVATED
+  RENEWED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+  EXTENDED_BY_ADMIN
+}
+
+model MembershipEvent {
+  id           BigInt              @id @default(autoincrement())
+  membershipId BigInt
+  type         MembershipEventType
+  actorId      BigInt?
+  note         String?             @db.VarChar(500)
+  data         Json?
+  createdAt    DateTime            @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([membershipId])
+}
+
+// ───────────────────────── Orders & payments (Phase 2) ─────────────────────────
+
+enum OrderType {
+  MEMBERSHIP
+  MARKETPLACE
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+model Order {
+  id          BigInt      @id @default(autoincrement())
+  publicNo    String      @unique @db.VarChar(24)
+  userId      BigInt
+  type        OrderType
+  status      OrderStatus @default(PENDING_PAYMENT)
+  subtotalSen Int
+  discountSen Int         @default(0)
+  taxSen      Int         @default(0)
+  totalSen    Int
+  currency    String      @default("MYR") @db.Char(3)
+  paidAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+enum OrderItemType {
+  MEMBERSHIP
+  LISTING
+  VOUCHER
+}
+
+model OrderItem {
+  id            BigInt        @id @default(autoincrement())
+  orderId       BigInt
+  itemType      OrderItemType
+  refId         String        @db.VarChar(40)
+  titleSnapshot String        @db.VarChar(200)
+  unitPriceSen  Int
+  qty           Int
+  lineTotalSen  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  REFUNDED
+}
+
+model Payment {
+  id          BigInt        @id @default(autoincrement())
+  orderId     BigInt
+  provider    String        @db.VarChar(30)
+  providerRef String?       @db.VarChar(100)
+  amountSen   Int
+  currency    String        @default("MYR") @db.Char(3)
+  status      PaymentStatus @default(CREATED)
+  checkoutUrl String?       @db.VarChar(500)
+  paidAt      DateTime?
+  failureCode String?       @db.VarChar(100)
+  raw         Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerRef])
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+/// Every gateway callback, valid or not, for debugging and replay safety.
+model PaymentWebhookLog {
+  id             BigInt    @id @default(autoincrement())
+  provider       String    @db.VarChar(30)
+  providerRef    String?   @db.VarChar(100)
+  signatureValid Boolean
+  payload        Json
+  processedAt    DateTime?
+  error          String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  @@index([provider, providerRef])
+}
+
+/// One row per reminder sent, so the daily job never sends the same reminder twice.
+model MembershipReminder {
+  id           BigInt   @id @default(autoincrement())
+  membershipId BigInt
+  offsetDays   Int // positive = days before expiry, negative = days after
+  sentAt       DateTime @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@unique([membershipId, offsetDays])
+}

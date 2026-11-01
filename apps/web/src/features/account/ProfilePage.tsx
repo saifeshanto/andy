@@ -13,7 +13,7 @@ export function ProfilePage() {
   return (
     <>
       <PageHeader title="Profile" description="Editing your profile arrives with the members module." />
-      <Card className="max-w-xl divide-y divide-ink-100 p-0">
+      <Card flush className="max-w-xl divide-y divide-ink-100">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-4 px-6 py-4">
             <span className="text-ink-500">{k}</span>

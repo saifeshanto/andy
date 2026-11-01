@@ -13,6 +13,10 @@ export const PERMISSIONS = {
   'audit.read': 'View the audit log',
   'emails.read': 'View the email log',
   'emails.manage': 'Retry failed emails',
+  'memberships.read': 'View memberships',
+  'orders.read': 'View orders and payments',
+  'payments.manage': 'Re-check a payment with the gateway',
+  'memberships.manage': 'Record an offline (cash or bank transfer) membership payment',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -28,17 +32,17 @@ export const SYSTEM_ROLES = {
   OPERATIONS: {
     name: 'Operations',
     description: 'Approvals, member support, content',
-    permissions: ['admin.access', 'users.read', 'users.manage', 'settings.read', 'emails.read', 'emails.manage'],
+    permissions: ['admin.access', 'users.read', 'users.manage', 'settings.read', 'emails.read', 'emails.manage', 'memberships.read', 'orders.read'],
   },
   FINANCE: {
     name: 'Finance',
     description: 'Wallets, withdrawals, payouts and financial reports',
-    permissions: ['admin.access', 'users.read', 'audit.read', 'settings.read'],
+    permissions: ['admin.access', 'users.read', 'audit.read', 'settings.read', 'memberships.read', 'memberships.manage', 'orders.read', 'payments.manage'],
   },
   SUPPORT: {
     name: 'Support',
     description: 'Read-mostly customer support',
-    permissions: ['admin.access', 'users.read', 'emails.read', 'emails.manage'],
+    permissions: ['admin.access', 'users.read', 'emails.read', 'emails.manage', 'memberships.read', 'orders.read'],
   },
 } as const satisfies Record<string, { name: string; description: string; permissions: readonly PermissionKey[] }>;
 

@@ -6,12 +6,17 @@ import { Card } from '@/components/ui/Card';
 import { MoneyRM } from '@/components/ui/MoneyRM';
 import { PageHeader } from '@/app/layouts/DashboardLayout';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useMembership } from '@/features/membership/api';
 import { api, ApiError } from '@/lib/api';
+import { formatDate } from '@/lib/format';
+import { Link } from 'react-router';
 
 export function AccountOverviewPage() {
   const { user } = useAuth();
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | string>('idle');
+  const membership = useMembership();
   if (!user) return null;
+  const m = membership.data;
 
   return (
     <>
@@ -46,13 +51,24 @@ export function AccountOverviewPage() {
         </div>
       )}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <p className="text-sm text-ink-500">Membership</p>
-          <p className="mt-2 font-display text-2xl font-bold uppercase">Not a member yet</p>
-          <p className="mt-1 text-sm text-ink-500">
-            Annual membership <MoneyRM sen={39900} /> per year. Joining opens soon.
-          </p>
-        </Card>
+        <Link to="/account/membership">
+          <Card className="h-full transition-shadow hover:shadow-lg">
+            <p className="text-sm text-ink-500">Membership</p>
+            {m?.current ? (
+              <>
+                <p className="mt-2 font-display text-2xl font-bold uppercase">Active</p>
+                <p className="mt-1 text-sm text-ink-500">Valid until {formatDate(m.paidUntil ?? m.current.endAt)}</p>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 font-display text-2xl font-bold uppercase">Not a member yet</p>
+                <p className="mt-1 text-sm text-ink-500">
+                  Join for <MoneyRM sen={m?.plan?.priceSen ?? 39900} /> a year →
+                </p>
+              </>
+            )}
+          </Card>
+        </Link>
         <Card>
           <p className="text-sm text-ink-500">Wallet</p>
           <p className="mt-2 font-display text-2xl font-bold uppercase">Coming soon</p>

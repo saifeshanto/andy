@@ -15,7 +15,13 @@ settingsRouter.get('/public/settings', async (_req, res) => {
 
 settingsRouter.get('/admin/settings', requireAuth, requirePermission('admin.access', 'settings.read'), async (_req, res) => {
   const values = await getSettings(db());
-  const fields = Object.entries(SETTINGS).map(([key, def]) => ({ key, label: def.label, type: typeof def.default }));
+  const fields = Object.entries(SETTINGS).map(([key, d]) => ({
+    key,
+    label: d.label,
+    kind: d.kind,
+    help: 'help' in d ? d.help : undefined,
+    options: 'options' in d ? d.options : undefined,
+  }));
   res.json({ data: { values, fields } });
 });
 

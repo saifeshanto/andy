@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { api, ApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { UserStatusBadge } from '../StatusBadge';
+import { ManualMembershipCard } from './ManualMembershipCard';
 import type { AdminUser, RoleInfo } from '../types';
 
 export function UserDetailPage() {
@@ -56,7 +57,7 @@ export function UserDetailPage() {
       </Link>
       <PageHeader title={u.fullName} description={u.email} actions={<UserStatusBadge status={u.status} />} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="divide-y divide-ink-100 p-0">
+        <Card flush className="divide-y divide-ink-100">
           {(
             [
               ['Phone', u.phone ?? '—'],
@@ -94,6 +95,8 @@ export function UserDetailPage() {
             </Button>
           </Card>
         )}
+
+        {can('memberships.manage') && u.status !== 'SUSPENDED' && <ManualMembershipCard userId={u.id} email={u.email} />}
 
         {can('roles.assign') && roles.data && (
           <Card>

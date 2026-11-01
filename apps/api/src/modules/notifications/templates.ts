@@ -52,4 +52,50 @@ export const templates = {
   },
 } as const;
 
-export type TemplateKey = keyof typeof templates;
+
+const myDate = (d: Date) =>
+  new Intl.DateTimeFormat('en-MY', { dateStyle: 'long', timeZone: 'Asia/Kuala_Lumpur' }).format(d);
+const myDateTime = (d: Date) =>
+  new Intl.DateTimeFormat('en-MY', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kuala_Lumpur' }).format(d);
+
+export const membershipTemplates = {
+  paymentReceipt(p: { name: string; orderNo: string; description: string; amount: string; paidAt: Date }): RenderedEmail {
+    const rows = [
+      ['Order', p.orderNo],
+      ['Item', p.description],
+      ['Amount paid', p.amount],
+      ['Paid on', myDateTime(p.paidAt)],
+    ];
+    const table = `<table cellpadding="6" style="border-collapse:collapse;font-size:14px">${rows
+      .map(([k, v]) => `<tr><td style="color:#5b6673">${esc(k!)}</td><td><strong>${esc(v!)}</strong></td></tr>`)
+      .join('')}</table>`;
+    return {
+      subject: `Payment received: ${p.orderNo}`,
+      html: layout(`Thank you, ${p.name}`, `<p>We have received your payment.</p>${table}<p style="font-size:12px;color:#5b6673">Keep this email as your receipt.</p>`),
+      text: `Thank you, ${p.name}. We have received your payment.\n\n${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n`,
+    };
+  },
+  membershipActivated(p: { name: string; startAt: Date; endAt: Date; renewed: boolean }): RenderedEmail {
+    const title = p.renewed ? 'Your membership is renewed' : 'Welcome to Andy Auto Club';
+    const body = `Your membership runs from ${myDate(p.startAt)} to ${myDate(p.endAt)}.`;
+    const url = `${env().APP_URL}/account/membership`;
+    return {
+      subject: title,
+      html: layout(title, `<p>Hi ${esc(p.name)}, ${esc(body)}</p>${button(url, 'View my membership')}`),
+      text: `Hi ${p.name},\n\n${body}\n\n${url}\n`,
+    };
+  },
+  membershipReminder(p: { name: string; endAt: Date; expired: boolean }): RenderedEmail {
+    const url = `${env().APP_URL}/account/membership`;
+    const title = p.expired ? 'Your membership has expired' : 'Your membership is ending soon';
+    const body = p.expired ? `Your membership ended on ${myDate(p.endAt)}. Renew to keep your member benefits.` : `Your membership ends on ${myDate(p.endAt)}. Renew to keep your member benefits.`;
+    return {
+      subject: title,
+      html: layout(title, `<p>Hi ${esc(p.name)}, ${esc(body)}</p>${button(url, 'Renew membership')}`),
+      text: `Hi ${p.name},\n\n${body}\n\n${url}\n`,
+    };
+  },
+};
+
+export const allTemplates = { ...templates, ...membershipTemplates };
+export type TemplateKey = keyof typeof allTemplates;
