@@ -58,3 +58,602 @@ model JobRun {
   @@index([job, startedAt])
   @@index([job, status])
 }
+
+// ───────────────────────── Identity & access (Phase 1) ─────────────────────────
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id              BigInt     @id @default(autoincrement())
+  publicId        String     @unique @db.VarChar(24)
+  email           String     @unique @db.VarChar(191)
+  phone           String?    @db.VarChar(32)
+  fullName        String     @db.VarChar(150)
+  passwordHash    String     @db.VarChar(100)
+  status          UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum RoleScope {
+  PLATFORM
+  MERCHANT
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique @db.VarChar(60)
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  scope       RoleScope @default(PLATFORM)
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          Int    @id @default(autoincrement())
+  key         String @unique @db.VarChar(100)
+  description String @db.VarChar(255)
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  userId      BigInt
+  roleId      Int
+  grantedById BigInt?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+/// Refresh tokens are stored hashed. `family` groups a rotation chain so reuse of an old token revokes the chain.
+model RefreshToken {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt
+  family     String    @db.VarChar(40)
+  tokenHash  String    @unique @db.Char(64)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedAt DateTime?
+  userAgent  String?   @db.VarChar(255)
+  ip         String?   @db.VarChar(45)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@index([expiresAt])
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model VerificationToken {
+  id        BigInt                @id @default(autoincrement())
+  userId    BigInt
+  type      VerificationTokenType
+  tokenHash String                @unique @db.Char(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+// ───────────────────────── Notifications (Phase 1) ─────────────────────────
+
+enum EmailStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+/// Outbox: emails are queued inside business transactions and sent by the send-emails cron job.
+model EmailOutbox {
+  id          BigInt      @id @default(autoincrement())
+  toEmail     String      @db.VarChar(191)
+  templateKey String      @db.VarChar(60)
+  subject     String      @db.VarChar(255)
+  bodyHtml    String      @db.Text
+  bodyText    String      @db.Text
+  status      EmailStatus @default(QUEUED)
+  attempts    Int         @default(0)
+  lastError   String?     @db.Text
+  sendAfter   DateTime    @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status, sendAfter])
+  @@index([toEmail])
+}
+
+// ───────────────────────── Membership (Phase 2) ─────────────────────────
+
+/// Price history is kept by creating a new plan and deactivating the old one; never edit priceSen in place.
+model MembershipPlan {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique @db.VarChar(40)
+  name           String   @db.VarChar(100)
+  priceSen       Int
+  durationMonths Int
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+model Membership {
+  id            BigInt           @id @default(autoincrement())
+  userId        BigInt
+  planId        Int
+  status        MembershipStatus
+  startAt       DateTime
+  endAt         DateTime
+  sourceOrderId BigInt?          @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  plan      MembershipPlan       @relation(fields: [planId], references: [id], onDelete: Restrict)
+  events    MembershipEvent[]
+  reminders MembershipReminder[]
+
+  @@index([userId, status])
+  @@index([status, endAt])
+}
+
+enum MembershipEventType {
+  ACTIVATED
+  RENEWED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+  EXTENDED_BY_ADMIN
+}
+
+model MembershipEvent {
+  id           BigInt              @id @default(autoincrement())
+  membershipId BigInt
+  type         MembershipEventType
+  actorId      BigInt?
+  note         String?             @db.VarChar(500)
+  data         Json?
+  createdAt    DateTime            @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([membershipId])
+}
+
+// ───────────────────────── Orders & payments (Phase 2) ─────────────────────────
+
+enum OrderType {
+  MEMBERSHIP
+  MARKETPLACE
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+model Order {
+  id          BigInt      @id @default(autoincrement())
+  publicNo    String      @unique @db.VarChar(24)
+  userId      BigInt
+  type        OrderType
+  status      OrderStatus @default(PENDING_PAYMENT)
+  subtotalSen Int
+  discountSen Int         @default(0)
+  taxSen      Int         @default(0)
+  totalSen    Int
+  currency    String      @default("MYR") @db.Char(3)
+  paidAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+enum OrderItemType {
+  MEMBERSHIP
+  LISTING
+  VOUCHER
+}
+
+model OrderItem {
+  id            BigInt        @id @default(autoincrement())
+  orderId       BigInt
+  itemType      OrderItemType
+  refId         String        @db.VarChar(40)
+  titleSnapshot String        @db.VarChar(200)
+  unitPriceSen  Int
+  qty           Int
+  lineTotalSen  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  REFUNDED
+}
+
+model Payment {
+  id          BigInt        @id @default(autoincrement())
+  orderId     BigInt
+  provider    String        @db.VarChar(30)
+  providerRef String?       @db.VarChar(100)
+  amountSen   Int
+  currency    String        @default("MYR") @db.Char(3)
+  status      PaymentStatus @default(CREATED)
+  checkoutUrl String?       @db.VarChar(500)
+  paidAt      DateTime?
+  failureCode String?       @db.VarChar(100)
+  raw         Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerRef])
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+/// Every gateway callback, valid or not, for debugging and replay safety.
+model PaymentWebhookLog {
+  id             BigInt    @id @default(autoincrement())
+  provider       String    @db.VarChar(30)
+  providerRef    String?   @db.VarChar(100)
+  signatureValid Boolean
+  payload        Json
+  processedAt    DateTime?
+  error          String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  @@index([provider, providerRef])
+}
+
+/// One row per reminder sent, so the daily job never sends the same reminder twice.
+model MembershipReminder {
+  id           BigInt   @id @default(autoincrement())
+  membershipId BigInt
+  offsetDays   Int // positive = days before expiry, negative = days after
+  sentAt       DateTime @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@unique([membershipId, offsetDays])
+}
+
+// ───────────────────────── Files (Phase 5) ─────────────────────────
+
+enum FilePurpose {
+  MERCHANT_DOCUMENT
+  MERCHANT_LOGO
+  MERCHANT_COVER
+  LISTING_IMAGE
+}
+
+enum FileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// An uploaded file. Bytes live on disk under UPLOAD_DIR at `storageKey`; never inside the web root.
+model StoredFile {
+  id           BigInt         @id @default(autoincrement())
+  publicId     String         @unique @db.VarChar(32)
+  ownerUserId  BigInt
+  purpose      FilePurpose
+  visibility   FileVisibility
+  mime         String         @db.VarChar(60)
+  sizeBytes    Int
+  sha256       String         @db.Char(64)
+  storageKey   String         @unique @db.VarChar(200)
+  originalName String         @db.VarChar(200)
+  createdAt    DateTime       @default(now())
+
+  @@index([ownerUserId, createdAt])
+}
+
+// ───────────────────────── Merchants (Phase 5) ─────────────────────────
+
+enum MerchantStatus {
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Merchant {
+  id           BigInt         @id @default(autoincrement())
+  publicId     String         @unique @db.VarChar(24)
+  slug         String         @unique @db.VarChar(120)
+  name         String         @db.VarChar(150)
+  businessType String         @db.VarChar(80)
+  ssmNo        String         @db.VarChar(40)
+  description  String?        @db.Text
+  phone        String?        @db.VarChar(32)
+  email        String?        @db.VarChar(191)
+  website      String?        @db.VarChar(255)
+  addressLine1 String?        @db.VarChar(200)
+  addressLine2 String?        @db.VarChar(200)
+  city         String?        @db.VarChar(100)
+  state        String?        @db.VarChar(60)
+  postcode     String?        @db.VarChar(10)
+  logoFileId   BigInt?
+  coverFileId  BigInt?
+  status       MerchantStatus @default(DRAFT)
+  submittedAt  DateTime?
+  reviewedById BigInt?
+  reviewedAt   DateTime?
+  reviewNote   String?        @db.VarChar(1000)
+  createdById  BigInt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  members   MerchantMember[]
+  invites   MerchantInvite[]
+  outlets   MerchantOutlet[]
+  documents MerchantDocument[]
+  listings  Listing[]
+
+  @@index([status, submittedAt])
+  @@index([createdById])
+}
+
+enum MerchantRole {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum MerchantMemberStatus {
+  ACTIVE
+  DISABLED
+}
+
+/// A user's staff seat at a merchant. One user may work at several merchants.
+model MerchantMember {
+  id          BigInt               @id @default(autoincrement())
+  merchantId  BigInt
+  userId      BigInt
+  role        MerchantRole
+  outletId    BigInt?
+  status      MerchantMemberStatus @default(ACTIVE)
+  invitedById BigInt?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, userId])
+  @@index([userId])
+}
+
+model MerchantInvite {
+  id          BigInt       @id @default(autoincrement())
+  merchantId  BigInt
+  email       String       @db.VarChar(191)
+  role        MerchantRole
+  outletId    BigInt?
+  tokenHash   String       @unique @db.Char(64)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  invitedById BigInt
+  createdAt   DateTime     @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, email])
+}
+
+model MerchantOutlet {
+  id           BigInt   @id @default(autoincrement())
+  merchantId   BigInt
+  name         String   @db.VarChar(150)
+  addressLine1 String   @db.VarChar(200)
+  addressLine2 String?  @db.VarChar(200)
+  city         String   @db.VarChar(100)
+  state        String   @db.VarChar(60)
+  postcode     String   @db.VarChar(10)
+  phone        String?  @db.VarChar(32)
+  hours        String?  @db.VarChar(500)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  merchant Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  listings ListingOutlet[]
+
+  @@index([merchantId])
+  @@index([state, city])
+}
+
+enum MerchantDocumentType {
+  SSM_CERTIFICATE
+  OWNER_IC
+  BANK_STATEMENT
+  OTHER
+}
+
+model MerchantDocument {
+  id         BigInt               @id @default(autoincrement())
+  merchantId BigInt
+  type       MerchantDocumentType
+  fileId     BigInt               @unique
+  createdAt  DateTime             @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+}
+
+// ───────────────────────── Catalog (Phase 5) ─────────────────────────
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  parentId  Int?
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(120)
+  sort      Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+}
+
+enum ListingType {
+  PRODUCT
+  SERVICE
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model Listing {
+  id              BigInt        @id @default(autoincrement())
+  publicId        String        @unique @db.VarChar(24)
+  merchantId      BigInt
+  categoryId      Int
+  type            ListingType
+  slug            String        @unique @db.VarChar(160)
+  title           String        @db.VarChar(150)
+  description     String        @db.Text
+  priceSen        Int
+  memberPriceSen  Int?
+  stockQty        Int?
+  durationMinutes Int?
+  isAvailable     Boolean       @default(true)
+  status          ListingStatus @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedById    BigInt?
+  reviewedAt      DateTime?
+  reviewNote      String?       @db.VarChar(1000)
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  merchant  Merchant          @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  category  Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images    ListingImage[]
+  outlets   ListingOutlet[]
+  revisions ListingRevision[]
+
+  @@index([status, publishedAt])
+  @@index([merchantId, status])
+  @@index([categoryId, status])
+}
+
+model ListingImage {
+  id        BigInt @id @default(autoincrement())
+  listingId BigInt
+  fileId    BigInt @unique
+  sort      Int    @default(0)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, sort])
+}
+
+model ListingOutlet {
+  listingId BigInt
+  outletId  BigInt
+
+  listing Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  outlet  MerchantOutlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, outletId])
+  @@index([outletId])
+}
+
+enum RevisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A pending edit to an already-approved listing. The live listing stays unchanged until it is approved.
+model ListingRevision {
+  id            BigInt         @id @default(autoincrement())
+  listingId     BigInt
+  data          Json
+  status        RevisionStatus @default(PENDING)
+  submittedById BigInt
+  reviewedById  BigInt?
+  reviewedAt    DateTime?
+  reviewNote    String?        @db.VarChar(1000)
+  createdAt     DateTime       @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, status])
+  @@index([status, createdAt])
+}

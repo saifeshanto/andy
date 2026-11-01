@@ -5,9 +5,10 @@ React + Vite + Tailwind (`apps/web`), Express + Prisma on MariaDB (`apps/api`), 
 
 - Plan: [`PROJECT_PLAN.md`](PROJECT_PLAN.md)
 - Rules for developers and AI agents: [`AGENTS.md`](AGENTS.md)
-- Hostinger test deploy: [`docs/runbooks/hostinger-phase0-test.md`](docs/runbooks/hostinger-phase0-test.md)
+- Deploying from GitHub on Hostinger: [`docs/runbooks/hostinger-github-deploy.md`](docs/runbooks/hostinger-github-deploy.md)
+- Hostinger test deploy (manual upload): [`docs/runbooks/hostinger-phase0-test.md`](docs/runbooks/hostinger-phase0-test.md)
 
-**Status:** Phase 0 (foundations and Hostinger test). No business features yet.
+**Status:** Merchants and marketplace (listing only). Done before it: accounts, roles and admin; membership with Billplz (switched off until keys are added) and offline payments.
 
 ## Local setup
 
@@ -20,6 +21,8 @@ npm run db:migrate -w @andy/api    # create tables
 npm run build -w @andy/shared
 npm run dev                        # API on :3000, web on :5173 (proxies /api)
 ```
+
+Locally, checkout uses a built-in test gateway (`PAYMENT_PROVIDER` unset or `fake`) with "Pay successfully" and "Fail payment" buttons. No money moves.
 
 ## Commands
 

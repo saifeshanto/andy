@@ -26,7 +26,7 @@ export function StatusPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <h1 className="font-display text-4xl font-bold uppercase">System status</h1>
-      <Card className="mt-6 divide-y divide-ink-100 p-0">
+      <Card flush className="mt-6 divide-y divide-ink-100">
         {rows.map(([label, ok, detail]) => (
           <div key={label} className="flex items-center justify-between gap-4 px-6 py-4">
             <div>

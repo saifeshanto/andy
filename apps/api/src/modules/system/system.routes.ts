@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { env } from '../../config/env.js';
 import { db } from '../../core/db.js';
 import { AppError } from '../../core/errors.js';
+import { tickJobs } from '../../jobs/registry.js';
 import { runJob } from '../../jobs/runner.js';
 import { getHealth } from './system.service.js';
 
@@ -31,6 +32,12 @@ internalRouter.post('/internal/cron/:job', async (req, res) => {
     throw new AppError('FORBIDDEN', 403, 'Invalid cron secret');
   }
   const { job } = z.object({ job: z.string().regex(/^[a-z0-9-]{1,60}$/) }).parse(req.params);
+  if (job === 'tick') {
+    const results = [];
+    for (const name of tickJobs) results.push({ job: name, ...(await runJob(db(), name, 'http')) });
+    res.status(results.some((r) => r.status === 'FAILED') ? 500 : 200).json({ data: results });
+    return;
+  }
   const result = await runJob(db(), job, 'http');
   res.status(result.status === 'FAILED' ? 500 : 200).json({ data: result });
 });
