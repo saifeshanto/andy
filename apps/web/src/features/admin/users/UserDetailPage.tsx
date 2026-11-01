@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { api, ApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { UserStatusBadge } from '../StatusBadge';
+import { ManualMembershipCard } from './ManualMembershipCard';
 import type { AdminUser, RoleInfo } from '../types';
 
 export function UserDetailPage() {
@@ -94,6 +95,8 @@ export function UserDetailPage() {
             </Button>
           </Card>
         )}
+
+        {can('memberships.manage') && u.status !== 'SUSPENDED' && <ManualMembershipCard userId={u.id} email={u.email} />}
 
         {can('roles.assign') && roles.data && (
           <Card>

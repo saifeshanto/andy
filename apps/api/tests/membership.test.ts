@@ -249,4 +249,52 @@ describe('admin', () => {
     const res = await request(app).post(`/api/v1/admin/payments/${payment.id}/requery`).set(bearer(admin));
     expect(res.body.data.outcome).toBe('PAID');
   });
+
+  describe('manual (offline) payment', () => {
+    const manual = (token: string, userId: string, body: object) =>
+      request(app).post(`/api/v1/admin/users/${userId}/membership/manual-payment`).set(bearer(token)).send(body);
+
+    it('activates a membership, records a paid order and receipt, and audits who did it', async () => {
+      const admin = await superAdmin();
+      const { user } = await registerUser('ali@example.com', 'Ali');
+      const res = await manual(admin, user.id, { reference: 'MBB-TRF-0001', note: 'Paid at the event' });
+      expect(res.status).toBe(201);
+      const order = await db().order.findUniqueOrThrow({ where: { publicNo: res.body.data.orderNo }, include: { payments: true } });
+      expect(order).toMatchObject({ status: 'PAID', totalSen: 39900 });
+      expect(order.payments[0]).toMatchObject({ provider: 'manual', providerRef: 'MBB-TRF-0001', status: 'PAID', amountSen: 39900 });
+      const m = await db().membership.findFirstOrThrow({ where: { sourceOrderId: order.id } });
+      expect(m.status).toBe('ACTIVE');
+      expect(m.endAt.getTime()).toBe(addMonths(m.startAt, 12).getTime());
+      expect(await db().auditLog.count({ where: { action: 'membership.manualPaymentRecorded' } })).toBe(1);
+      expect(await db().emailOutbox.count({ where: { toEmail: 'ali@example.com', templateKey: { in: ['paymentReceipt', 'membershipActivated'] } } })).toBe(2);
+    });
+
+    it('refuses a reference already used, so one payment cannot be recorded twice', async () => {
+      const admin = await superAdmin();
+      const a = await registerUser('ali@example.com');
+      const b = await registerUser('siti@example.com');
+      expect((await manual(admin, a.user.id, { reference: 'REF-1' })).status).toBe(201);
+      const dup = await manual(admin, b.user.id, { reference: 'REF-1' });
+      expect(dup.status).toBe(409);
+      expect(dup.body.error.code).toBe('DUPLICATE_REFERENCE');
+    });
+
+    it('follows the same early-renewal rule as online payments', async () => {
+      const admin = await superAdmin();
+      const { user } = await registerUser('ali@example.com');
+      await manual(admin, user.id, { reference: 'REF-1' });
+      const again = await manual(admin, user.id, { reference: 'REF-2' });
+      expect(again.body.error.code).toBe('RENEWAL_NOT_AVAILABLE');
+    });
+
+    it('needs memberships.manage, a reference, and cannot be re-checked with a gateway', async () => {
+      const admin = await superAdmin();
+      const { user, accessToken } = await registerUser('ali@example.com');
+      expect((await manual(accessToken, user.id, { reference: 'REF-1' })).status).toBe(403);
+      expect((await manual(admin, user.id, {})).status).toBe(400);
+      await manual(admin, user.id, { reference: 'REF-1' });
+      const payment = await db().payment.findFirstOrThrow({ where: { provider: 'manual' } });
+      expect((await request(app).post(`/api/v1/admin/payments/${payment.id}/requery`).set(bearer(admin))).status).toBe(409);
+    });
+  });
 });

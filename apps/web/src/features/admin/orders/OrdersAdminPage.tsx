@@ -63,7 +63,7 @@ export function OrdersAdminPage() {
               { key: 'who', header: 'Customer', cell: (o) => o.user.email },
               { key: 'total', header: 'Total', cell: (o) => <MoneyRM sen={o.totalSen} /> },
               { key: 'status', header: 'Status', cell: (o) => <Badge tone={orderTone[o.status]}>{orderLabel[o.status]}</Badge> },
-              { key: 'gw', header: 'Gateway ref', cell: (o) => <span className="text-xs">{o.payments[0]?.providerRef ?? '—'}{o.payments[0]?.failureCode ? ` (${o.payments[0].failureCode})` : ''}</span> },
+              { key: 'gw', header: 'Payment ref', cell: (o) => <span className="text-xs">{o.payments[0]?.provider === 'manual' ? 'Offline: ' : ''}{o.payments[0]?.providerRef ?? '—'}{o.payments[0]?.failureCode ? ` (${o.payments[0].failureCode})` : ''}</span> },
               { key: 'date', header: 'Created', cell: (o) => formatDateTime(o.createdAt) },
               {
                 key: 'act',

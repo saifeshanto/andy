@@ -9,7 +9,7 @@ import { IdParam } from '../../core/http.js';
 import { logger } from '../../core/logger.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { applyPaymentResult } from './payments.service.js';
-import { getProvider } from './providers/index.js';
+import { MANUAL_PROVIDER, getProvider } from './providers/index.js';
 import { fakeBill, fakeMarkPaid, fakeSign } from './providers/fake.js';
 
 export const paymentsRouter = Router();
@@ -66,6 +66,7 @@ paymentsRouter.post('/admin/payments/:id/requery', requireAuth, requirePermissio
   const { id } = IdParam.parse(req.params);
   const payment = await db().payment.findUnique({ where: { id } });
   if (!payment?.providerRef) throw new AppError('NOT_FOUND', 404, 'Payment not found or never reached the gateway');
+  if (payment.provider === MANUAL_PROVIDER) throw new AppError('NOT_A_GATEWAY_PAYMENT', 409, 'This payment was recorded by an admin, not taken through a gateway');
   const result = await getProvider(payment.provider).queryStatus(payment.providerRef);
   const outcome = await applyPaymentResult(payment.provider, result, 'requery');
   await audit({ actorId: currentUser(req).id, action: 'payment.requeried', entityType: 'Payment', entityId: id, after: { outcome }, ip: requestIp(req) });

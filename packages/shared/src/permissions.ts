@@ -16,6 +16,7 @@ export const PERMISSIONS = {
   'memberships.read': 'View memberships',
   'orders.read': 'View orders and payments',
   'payments.manage': 'Re-check a payment with the gateway',
+  'memberships.manage': 'Record an offline (cash or bank transfer) membership payment',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -36,7 +37,7 @@ export const SYSTEM_ROLES = {
   FINANCE: {
     name: 'Finance',
     description: 'Wallets, withdrawals, payouts and financial reports',
-    permissions: ['admin.access', 'users.read', 'audit.read', 'settings.read', 'memberships.read', 'orders.read', 'payments.manage'],
+    permissions: ['admin.access', 'users.read', 'audit.read', 'settings.read', 'memberships.read', 'memberships.manage', 'orders.read', 'payments.manage'],
   },
   SUPPORT: {
     name: 'Support',

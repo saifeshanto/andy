@@ -37,3 +37,6 @@ export function getProvider(name = activeProviderName()): PaymentProvider {
 }
 
 export type { PaymentProvider, PaymentResult } from './types.js';
+
+/** Provider name for payments an admin records by hand (cash, bank transfer). Never queried. */
+export const MANUAL_PROVIDER = 'manual';

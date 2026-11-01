@@ -5,6 +5,8 @@ import { db } from '../../core/db.js';
 import { PaginationSchema, pageArgs, pageMeta } from '../../core/http.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { startMembershipCheckout } from '../orders/orders.service.js';
+import { requestIp } from '../../core/audit.js';
+import { recordManualMembershipPayment } from './manual.service.js';
 import { getMembershipOverview } from './membership.service.js';
 
 export const membershipRouter = Router();
@@ -54,3 +56,21 @@ membershipRouter.get('/admin/memberships', requireAuth, requirePermission('admin
     meta: pageMeta(q, total),
   });
 });
+
+const ManualPaymentBody = z.object({
+  reference: z.string().trim().min(3, 'Enter the receipt or bank transfer reference').max(100),
+  note: z.string().trim().max(500).optional(),
+});
+
+/** Record a cash or bank-transfer membership payment and activate the membership. */
+membershipRouter.post(
+  '/admin/users/:publicId/membership/manual-payment',
+  requireAuth,
+  requirePermission('admin.access', 'memberships.manage'),
+  async (req, res) => {
+    const { publicId } = z.object({ publicId: z.string().regex(/^[A-Za-z0-9]{8,24}$/) }).parse(req.params);
+    const body = ManualPaymentBody.parse(req.body);
+    const actor = currentUser(req);
+    res.status(201).json({ data: await recordManualMembershipPayment({ id: actor.id, ip: requestIp(req) }, publicId, body) });
+  },
+);
