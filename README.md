@@ -8,7 +8,7 @@ React + Vite + Tailwind (`apps/web`), Express + Prisma on MariaDB (`apps/api`), 
 - Deploying from GitHub on Hostinger: [`docs/runbooks/hostinger-github-deploy.md`](docs/runbooks/hostinger-github-deploy.md)
 - Hostinger test deploy (manual upload): [`docs/runbooks/hostinger-phase0-test.md`](docs/runbooks/hostinger-phase0-test.md)
 
-**Status:** Phase 2 (membership and Billplz payments). Phase 1 delivered accounts, roles, admin and email.
+**Status:** Vouchers and QR redemption at the counter. Done before it: merchants and the marketplace (listing only); accounts, roles and admin; membership with Billplz (switched off until keys are added) and offline payments.
 
 ## Local setup
 

@@ -35,3 +35,14 @@ describe('money', () => {
     expect(percentOf(150, 3333)).toBe(50);
   });
 });
+
+import { describeBenefit, formatVoucherCode, normalizeVoucherCode } from './vouchers.js';
+describe('voucher codes', () => {
+  it('normalises typed and scanned codes', () => {
+    expect(normalizeVoucherCode(' abcde-fgh23 ')).toBe('ABCDEFGH23');
+    expect(formatVoucherCode('ABCDEFGH23')).toBe('ABCDE-FGH23');
+    expect(describeBenefit('FIXED_OFF', 2000)).toBe('RM 20.00 off');
+    expect(describeBenefit('PERCENT_OFF', 15)).toBe('15% off');
+    expect(describeBenefit('FREE_ITEM', null)).toBe('Free');
+  });
+});

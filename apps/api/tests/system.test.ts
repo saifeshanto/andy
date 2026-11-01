@@ -23,6 +23,7 @@ describe('tick', () => {
       'reconcile-payments',
       'expire-orders',
       'expire-memberships',
+      'expire-vouchers',
       'membership-reminders',
       'send-emails',
       'cleanup-tokens',

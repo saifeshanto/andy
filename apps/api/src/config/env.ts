@@ -45,6 +45,12 @@ const EnvSchema = z.object({
   BILLPLZ_API_KEY: z.string().optional(),
   BILLPLZ_X_SIGNATURE_KEY: z.string().optional(),
   BILLPLZ_COLLECTION_ID: z.string().optional(),
+
+  /**
+   * Folder for uploaded files (merchant documents, logos, listing photos). Must be OUTSIDE the app folder
+   * on Hostinger, because a GitHub redeploy replaces the app folder. Defaults to ./storage/uploads for local dev.
+   */
+  UPLOAD_DIR: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

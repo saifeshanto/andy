@@ -9,13 +9,18 @@ import { errorHandler, notFound } from './core/errors.js';
 import { adminUsersRouter } from './modules/admin-users/index.js';
 import { auditRouter } from './modules/audit/index.js';
 import { authRouter } from './modules/auth/index.js';
+import { categoriesRouter, listingsRouter, marketplaceRouter } from './modules/catalog/index.js';
+import { filesRouter } from './modules/files/index.js';
 import { membershipRouter } from './modules/membership/index.js';
+import { portalRouter } from './modules/merchant-portal/index.js';
+import { merchantsRouter } from './modules/merchants/index.js';
 import { ordersRouter } from './modules/orders/index.js';
 import { fakeGatewayRouter, paymentsRouter } from './modules/payments/index.js';
 import { emailAdminRouter } from './modules/notifications/index.js';
 import { rbacRouter } from './modules/rbac/index.js';
 import { settingsRouter } from './modules/settings/index.js';
 import { internalRouter, systemRouter } from './modules/system/index.js';
+import { vouchersRouter } from './modules/vouchers/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +50,13 @@ export function createApp() {
   api.use(membershipRouter);
   api.use(ordersRouter);
   api.use(paymentsRouter);
+  api.use(filesRouter);
+  api.use(merchantsRouter);
+  api.use(portalRouter);
+  api.use(categoriesRouter);
+  api.use(listingsRouter);
+  api.use(marketplaceRouter);
+  api.use(vouchersRouter);
   if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);

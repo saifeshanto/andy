@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { db } from '../src/core/db.js';
+import { ensureDefaultCategories } from '../src/modules/catalog/index.js';
 import { ensureDefaultPlan } from '../src/modules/membership/index.js';
 import { syncRbac } from '../src/modules/rbac/index.js';
 
@@ -11,6 +12,21 @@ export const PASSWORD = 'correct-horse-9';
 /** Empties every table (children first) and re-syncs roles. */
 export async function resetDb() {
   const d = db();
+  await d.voucherRedemption.deleteMany();
+  await d.voucher.deleteMany();
+  await d.voucherCampaignOutlet.deleteMany();
+  await d.voucherCampaign.deleteMany();
+  await d.listingRevision.deleteMany();
+  await d.listingOutlet.deleteMany();
+  await d.listingImage.deleteMany();
+  await d.listing.deleteMany();
+  await d.category.deleteMany();
+  await d.merchantDocument.deleteMany();
+  await d.merchantInvite.deleteMany();
+  await d.merchantMember.deleteMany();
+  await d.merchantOutlet.deleteMany();
+  await d.merchant.deleteMany();
+  await d.storedFile.deleteMany();
   await d.membershipReminder.deleteMany();
   await d.membershipEvent.deleteMany();
   await d.membership.deleteMany();
@@ -29,6 +45,7 @@ export async function resetDb() {
   await d.setting.deleteMany();
   await syncRbac(d);
   await ensureDefaultPlan(d);
+  await ensureDefaultCategories(d);
 }
 
 /** Pulls the raw token out of the newest queued email to that address. */

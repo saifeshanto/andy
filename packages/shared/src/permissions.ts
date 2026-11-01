@@ -17,6 +17,13 @@ export const PERMISSIONS = {
   'orders.read': 'View orders and payments',
   'payments.manage': 'Re-check a payment with the gateway',
   'memberships.manage': 'Record an offline (cash or bank transfer) membership payment',
+  'merchants.read': 'View merchants, applications and their documents',
+  'merchants.review': 'Approve, reject or request changes to merchant applications',
+  'merchants.manage': 'Suspend or reinstate merchants',
+  'listings.review': 'Approve or reject merchant listings and listing edits',
+  'catalog.manage': 'Manage marketplace categories',
+  'vouchers.review': 'Approve or reject merchant voucher offers',
+  'vouchers.manage': 'Pause or end voucher offers and undo a redemption made by mistake',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -32,7 +39,23 @@ export const SYSTEM_ROLES = {
   OPERATIONS: {
     name: 'Operations',
     description: 'Approvals, member support, content',
-    permissions: ['admin.access', 'users.read', 'users.manage', 'settings.read', 'emails.read', 'emails.manage', 'memberships.read', 'orders.read'],
+    permissions: [
+      'admin.access',
+      'users.read',
+      'users.manage',
+      'settings.read',
+      'emails.read',
+      'emails.manage',
+      'memberships.read',
+      'orders.read',
+      'merchants.read',
+      'merchants.review',
+      'merchants.manage',
+      'listings.review',
+      'catalog.manage',
+      'vouchers.review',
+      'vouchers.manage',
+    ],
   },
   FINANCE: {
     name: 'Finance',
@@ -42,7 +65,7 @@ export const SYSTEM_ROLES = {
   SUPPORT: {
     name: 'Support',
     description: 'Read-mostly customer support',
-    permissions: ['admin.access', 'users.read', 'emails.read', 'emails.manage', 'memberships.read', 'orders.read'],
+    permissions: ['admin.access', 'users.read', 'emails.read', 'emails.manage', 'memberships.read', 'orders.read', 'merchants.read'],
   },
 } as const satisfies Record<string, { name: string; description: string; permissions: readonly PermissionKey[] }>;
 
