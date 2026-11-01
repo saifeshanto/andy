@@ -6,6 +6,13 @@ import { MembershipsPage } from '@/features/admin/memberships/MembershipsPage';
 import { MerchantAdminDetailPage } from '@/features/admin/merchants/MerchantAdminDetailPage';
 import { MerchantsAdminPage } from '@/features/admin/merchants/MerchantsAdminPage';
 import { MerchantApplyPage } from '@/features/merchants/MerchantApplyPage';
+import { AcceptInvitePage } from '@/features/merchant-portal/AcceptInvitePage';
+import { MerchantHome } from '@/features/merchant-portal/MerchantHome';
+import { OutletsPage } from '@/features/merchant-portal/OutletsPage';
+import { MerchantPortalLayout } from '@/features/merchant-portal/PortalContext';
+import { PortalOverviewPage } from '@/features/merchant-portal/PortalOverviewPage';
+import { PortalProfilePage } from '@/features/merchant-portal/ProfilePage';
+import { StaffPage } from '@/features/merchant-portal/StaffPage';
 import { OrdersAdminPage } from '@/features/admin/orders/OrdersAdminPage';
 import { CheckoutResultPage } from '@/features/membership/CheckoutResultPage';
 import { MembershipPage } from '@/features/membership/MembershipPage';
@@ -69,7 +76,25 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
-      { element: <PublicLayout />, children: [{ path: '/checkout/result', element: <CheckoutResultPage /> }, { path: '/merchant/apply', element: <MerchantApplyPage /> }] },
+      {
+        element: <PublicLayout />,
+        children: [
+          { path: '/checkout/result', element: <CheckoutResultPage /> },
+          { path: '/merchant/apply', element: <MerchantApplyPage /> },
+          { path: '/merchant/invite', element: <AcceptInvitePage /> },
+          { path: '/merchant', element: <MerchantHome /> },
+        ],
+      },
+      {
+        path: '/merchant/:merchantId',
+        element: <MerchantPortalLayout />,
+        children: [
+          { index: true, element: <PortalOverviewPage /> },
+          { path: 'outlets', element: <OutletsPage /> },
+          { path: 'staff', element: <StaffPage /> },
+          { path: 'profile', element: <PortalProfilePage /> },
+        ],
+      },
       {
         path: '/account',
         element: <DashboardLayout title="Account" nav={accountNav} />,

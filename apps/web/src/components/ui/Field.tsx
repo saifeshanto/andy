@@ -20,7 +20,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
         id={id}
         aria-invalid={!!error}
         aria-describedby={describedBy}
-        className={`block min-h-11 w-full rounded-xl border bg-white px-3.5 text-base text-ink-900 placeholder:text-ink-300 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 ${error ? 'border-danger-500' : 'border-ink-100'}`}
+        className={`block min-h-11 w-full rounded-xl border bg-white px-3.5 text-base text-ink-900 placeholder:text-ink-300 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 disabled:bg-ink-50 disabled:text-ink-500 ${error ? 'border-danger-500' : 'border-ink-100'}`}
         {...props}
       />
       {error ? (
@@ -37,7 +37,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
 });
 
 const control = (error?: string) =>
-  `block w-full rounded-xl border bg-white px-3.5 text-base text-ink-900 placeholder:text-ink-300 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 ${error ? 'border-danger-500' : 'border-ink-100'}`;
+  `block w-full rounded-xl border bg-white px-3.5 text-base text-ink-900 placeholder:text-ink-300 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20 disabled:bg-ink-50 disabled:text-ink-500 ${error ? 'border-danger-500' : 'border-ink-100'}`;
 
 function Help({ id, error, hint }: { id: string; error?: string; hint?: ReactNode }) {
   if (error) return <p id={`${id}-error`} className="mt-1.5 text-sm text-danger-500">{error}</p>;

@@ -11,6 +11,7 @@ import { auditRouter } from './modules/audit/index.js';
 import { authRouter } from './modules/auth/index.js';
 import { filesRouter } from './modules/files/index.js';
 import { membershipRouter } from './modules/membership/index.js';
+import { portalRouter } from './modules/merchant-portal/index.js';
 import { merchantsRouter } from './modules/merchants/index.js';
 import { ordersRouter } from './modules/orders/index.js';
 import { fakeGatewayRouter, paymentsRouter } from './modules/payments/index.js';
@@ -49,6 +50,7 @@ export function createApp() {
   api.use(paymentsRouter);
   api.use(filesRouter);
   api.use(merchantsRouter);
+  api.use(portalRouter);
   if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);

@@ -141,5 +141,23 @@ export const merchantTemplates = {
   },
 };
 
-export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates };
+const roleName = (r: string) => (r === 'MANAGER' ? 'manager' : r === 'CASHIER' ? 'cashier' : r.toLowerCase());
+
+export const merchantStaffTemplates = {
+  merchantStaffInvite(x: { merchant: string; inviter: string; role: string; token: string; days: number }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/invite?token=${encodeURIComponent(x.token)}`;
+    return {
+      subject: `${x.inviter} invited you to ${x.merchant} on Andy Auto Club`,
+      html: layout(
+        `Join ${x.merchant}`,
+        p(`${x.inviter} has invited you to join ${x.merchant} as a ${roleName(x.role)}. Sign in or create an account with this email address, then accept. The link expires in ${x.days} days.`) +
+          button(url, 'Accept invitation') +
+          p('If you were not expecting this, you can ignore this email.'),
+      ),
+      text: `${x.inviter} has invited you to join ${x.merchant} as a ${roleName(x.role)}.\nAccept (expires in ${x.days} days): ${url}\n\nIf you were not expecting this, ignore this email.\n`,
+    };
+  },
+};
+
+export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates, ...merchantStaffTemplates };
 export type TemplateKey = keyof typeof allTemplates;
