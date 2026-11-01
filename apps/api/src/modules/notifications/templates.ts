@@ -97,5 +97,49 @@ export const membershipTemplates = {
   },
 };
 
-export const allTemplates = { ...templates, ...membershipTemplates };
+const p = (t: string) => `<p>${esc(t)}</p>`;
+const noteBlock = (note: string) => (note ? `<p style="background:#f5f6f8;border-radius:8px;padding:12px 14px"><strong>Note from our team:</strong><br>${esc(note)}</p>` : '');
+
+export const merchantTemplates = {
+  merchantApplicationReceived(x: { name: string; merchant: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/apply`;
+    return {
+      subject: `We received your merchant application: ${x.merchant}`,
+      html: layout(`Thanks, ${x.name}`, p(`We have received the application for ${x.merchant}. Our team will review it and email you the outcome.`) + button(url, 'View application')),
+      text: `Hi ${x.name},\n\nWe have received the application for ${x.merchant}. Our team will review it and email you the outcome.\n${url}\n`,
+    };
+  },
+  merchantApproved(x: { name: string; merchant: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant`;
+    return {
+      subject: `${x.merchant} is approved`,
+      html: layout(`Welcome aboard, ${x.name}`, p(`${x.merchant} has been approved. You can now open your merchant portal to add outlets, staff and listings.`) + button(url, 'Open merchant portal')),
+      text: `Hi ${x.name},\n\n${x.merchant} has been approved. Open your merchant portal: ${url}\n`,
+    };
+  },
+  merchantChangesRequested(x: { name: string; merchant: string; note: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/apply`;
+    return {
+      subject: `Changes needed for ${x.merchant}`,
+      html: layout(`Hi ${x.name}, a few changes are needed`, p(`Our team reviewed the application for ${x.merchant} and needs some changes before it can be approved.`) + noteBlock(x.note) + button(url, 'Update application')),
+      text: `Hi ${x.name},\n\nChanges are needed for ${x.merchant}:\n${x.note}\n\nUpdate it here: ${url}\n`,
+    };
+  },
+  merchantRejected(x: { name: string; merchant: string; note: string }): RenderedEmail {
+    return {
+      subject: `Your merchant application: ${x.merchant}`,
+      html: layout(`Hi ${x.name}`, p(`Thank you for applying. We are unable to approve ${x.merchant} at this time.`) + noteBlock(x.note)),
+      text: `Hi ${x.name},\n\nThank you for applying. We are unable to approve ${x.merchant} at this time.\n${x.note}\n`,
+    };
+  },
+  merchantSuspended(x: { name: string; merchant: string; note: string }): RenderedEmail {
+    return {
+      subject: `${x.merchant} has been suspended`,
+      html: layout(`Hi ${x.name}`, p(`${x.merchant} has been suspended and its listings are hidden from the marketplace. Please contact us if you have questions.`) + noteBlock(x.note)),
+      text: `Hi ${x.name},\n\n${x.merchant} has been suspended and its listings are hidden.\n${x.note}\n`,
+    };
+  },
+};
+
+export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates };
 export type TemplateKey = keyof typeof allTemplates;

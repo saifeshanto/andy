@@ -30,6 +30,7 @@ Hostinger builds the app straight from the GitHub branch.
 | `MAIL_FROM` | e.g. `Andy Auto Club <no-reply@yourdomain.com>` |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | `smtp.hostinger.com` / `465` / `true` |
 | `SMTP_USER` / `SMTP_PASSWORD` | the mailbox address and its password |
+| `UPLOAD_DIR` | a folder **outside** the app folder, e.g. `/home/<user>/andy-uploads` (create it in File Manager first). Each deploy replaces the app folder, so files kept inside it would be lost. Uploads are refused until this is set. Include it in backups. |
 | `PAYMENT_PROVIDER` | `billplz` (leave unset or `none` to keep checkout switched off) |
 | `BILLPLZ_SANDBOX` | `true` for testing with a sandbox account, `false` for real money |
 | `BILLPLZ_API_KEY` | Billplz dashboard → Settings → Keys & Integration → API Secret Key |

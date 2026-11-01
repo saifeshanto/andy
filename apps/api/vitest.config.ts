@@ -11,6 +11,7 @@ export default defineConfig({
       BOOTSTRAP_ADMIN_EMAIL: 'owner@example.com',
       MAIL_TRANSPORT: 'log',
       LOG_LEVEL: 'silent',
+      UPLOAD_DIR: '/tmp/andy-test-uploads',
     },
   },
 });

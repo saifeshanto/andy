@@ -6,3 +6,6 @@ const message = { error: { code: 'RATE_LIMITED', message: 'Too many attempts. Pl
 
 /** Login, register, password reset: 10 requests per 15 minutes per IP. */
 export const authLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 10, message });
+
+/** Uploads: 60 files per 15 minutes per IP. */
+export const uploadLimiter = rateLimit({ ...common, windowMs: 15 * 60_000, limit: 60, message });

@@ -382,3 +382,278 @@ model MembershipReminder {
 
   @@unique([membershipId, offsetDays])
 }
+
+// ───────────────────────── Files (Phase 5) ─────────────────────────
+
+enum FilePurpose {
+  MERCHANT_DOCUMENT
+  MERCHANT_LOGO
+  MERCHANT_COVER
+  LISTING_IMAGE
+}
+
+enum FileVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// An uploaded file. Bytes live on disk under UPLOAD_DIR at `storageKey`; never inside the web root.
+model StoredFile {
+  id           BigInt         @id @default(autoincrement())
+  publicId     String         @unique @db.VarChar(32)
+  ownerUserId  BigInt
+  purpose      FilePurpose
+  visibility   FileVisibility
+  mime         String         @db.VarChar(60)
+  sizeBytes    Int
+  sha256       String         @db.Char(64)
+  storageKey   String         @unique @db.VarChar(200)
+  originalName String         @db.VarChar(200)
+  createdAt    DateTime       @default(now())
+
+  @@index([ownerUserId, createdAt])
+}
+
+// ───────────────────────── Merchants (Phase 5) ─────────────────────────
+
+enum MerchantStatus {
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Merchant {
+  id           BigInt         @id @default(autoincrement())
+  publicId     String         @unique @db.VarChar(24)
+  slug         String         @unique @db.VarChar(120)
+  name         String         @db.VarChar(150)
+  businessType String         @db.VarChar(80)
+  ssmNo        String         @db.VarChar(40)
+  description  String?        @db.Text
+  phone        String?        @db.VarChar(32)
+  email        String?        @db.VarChar(191)
+  website      String?        @db.VarChar(255)
+  addressLine1 String?        @db.VarChar(200)
+  addressLine2 String?        @db.VarChar(200)
+  city         String?        @db.VarChar(100)
+  state        String?        @db.VarChar(60)
+  postcode     String?        @db.VarChar(10)
+  logoFileId   BigInt?
+  coverFileId  BigInt?
+  status       MerchantStatus @default(DRAFT)
+  submittedAt  DateTime?
+  reviewedById BigInt?
+  reviewedAt   DateTime?
+  reviewNote   String?        @db.VarChar(1000)
+  createdById  BigInt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  members   MerchantMember[]
+  invites   MerchantInvite[]
+  outlets   MerchantOutlet[]
+  documents MerchantDocument[]
+  listings  Listing[]
+
+  @@index([status, submittedAt])
+  @@index([createdById])
+}
+
+enum MerchantRole {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum MerchantMemberStatus {
+  ACTIVE
+  DISABLED
+}
+
+/// A user's staff seat at a merchant. One user may work at several merchants.
+model MerchantMember {
+  id          BigInt               @id @default(autoincrement())
+  merchantId  BigInt
+  userId      BigInt
+  role        MerchantRole
+  outletId    BigInt?
+  status      MerchantMemberStatus @default(ACTIVE)
+  invitedById BigInt?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, userId])
+  @@index([userId])
+}
+
+model MerchantInvite {
+  id          BigInt       @id @default(autoincrement())
+  merchantId  BigInt
+  email       String       @db.VarChar(191)
+  role        MerchantRole
+  outletId    BigInt?
+  tokenHash   String       @unique @db.Char(64)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  invitedById BigInt
+  createdAt   DateTime     @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, email])
+}
+
+model MerchantOutlet {
+  id           BigInt   @id @default(autoincrement())
+  merchantId   BigInt
+  name         String   @db.VarChar(150)
+  addressLine1 String   @db.VarChar(200)
+  addressLine2 String?  @db.VarChar(200)
+  city         String   @db.VarChar(100)
+  state        String   @db.VarChar(60)
+  postcode     String   @db.VarChar(10)
+  phone        String?  @db.VarChar(32)
+  hours        String?  @db.VarChar(500)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  merchant Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  listings ListingOutlet[]
+
+  @@index([merchantId])
+  @@index([state, city])
+}
+
+enum MerchantDocumentType {
+  SSM_CERTIFICATE
+  OWNER_IC
+  BANK_STATEMENT
+  OTHER
+}
+
+model MerchantDocument {
+  id         BigInt               @id @default(autoincrement())
+  merchantId BigInt
+  type       MerchantDocumentType
+  fileId     BigInt               @unique
+  createdAt  DateTime             @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+}
+
+// ───────────────────────── Catalog (Phase 5) ─────────────────────────
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  parentId  Int?
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(120)
+  sort      Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+}
+
+enum ListingType {
+  PRODUCT
+  SERVICE
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model Listing {
+  id              BigInt        @id @default(autoincrement())
+  publicId        String        @unique @db.VarChar(24)
+  merchantId      BigInt
+  categoryId      Int
+  type            ListingType
+  slug            String        @unique @db.VarChar(160)
+  title           String        @db.VarChar(150)
+  description     String        @db.Text
+  priceSen        Int
+  memberPriceSen  Int?
+  stockQty        Int?
+  durationMinutes Int?
+  isAvailable     Boolean       @default(true)
+  status          ListingStatus @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedById    BigInt?
+  reviewedAt      DateTime?
+  reviewNote      String?       @db.VarChar(1000)
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  merchant  Merchant          @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  category  Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images    ListingImage[]
+  outlets   ListingOutlet[]
+  revisions ListingRevision[]
+
+  @@index([status, publishedAt])
+  @@index([merchantId, status])
+  @@index([categoryId, status])
+}
+
+model ListingImage {
+  id        BigInt @id @default(autoincrement())
+  listingId BigInt
+  fileId    BigInt @unique
+  sort      Int    @default(0)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, sort])
+}
+
+model ListingOutlet {
+  listingId BigInt
+  outletId  BigInt
+
+  listing Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  outlet  MerchantOutlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, outletId])
+  @@index([outletId])
+}
+
+enum RevisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A pending edit to an already-approved listing. The live listing stays unchanged until it is approved.
+model ListingRevision {
+  id            BigInt         @id @default(autoincrement())
+  listingId     BigInt
+  data          Json
+  status        RevisionStatus @default(PENDING)
+  submittedById BigInt
+  reviewedById  BigInt?
+  reviewedAt    DateTime?
+  reviewNote    String?        @db.VarChar(1000)
+  createdAt     DateTime       @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, status])
+  @@index([status, createdAt])
+}

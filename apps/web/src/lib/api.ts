@@ -78,3 +78,31 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
   }
   return parse(res) as Promise<T>;
 }
+
+/** Fetches a protected file (e.g. a merchant document) with the session token and returns it as a Blob. */
+export async function apiBlob(path: string, retry = true): Promise<Blob> {
+  const headers: Record<string, string> = { ...APP_HEADER };
+  if (accessToken) headers.authorization = `Bearer ${accessToken}`;
+  const res = await fetch(path.startsWith('/api/') ? path : `/api/v1${path}`, { headers, credentials: 'same-origin' });
+  if (res.status === 401 && retry && accessToken && (await refreshSession())) return apiBlob(path, false);
+  if (!res.ok) throw new ApiError(res.status, 'HTTP_ERROR', 'Could not open the file');
+  return res.blob();
+}
+
+export type UploadPurpose = 'MERCHANT_DOCUMENT' | 'MERCHANT_LOGO' | 'MERCHANT_COVER' | 'LISTING_IMAGE';
+export interface UploadedFile {
+  id: string;
+  url: string;
+  mime: string;
+  sizeBytes: number;
+  name: string;
+}
+
+/** Uploads one file as the raw request body. The server checks type and size from the bytes themselves. */
+export function uploadFile(file: File, purpose: UploadPurpose): Promise<UploadedFile> {
+  return api<{ data: UploadedFile }>(`/uploads?purpose=${purpose}`, {
+    method: 'POST',
+    body: file,
+    headers: { 'content-type': 'application/octet-stream', 'x-file-name': encodeURIComponent(file.name) },
+  }).then((r) => r.data);
+}

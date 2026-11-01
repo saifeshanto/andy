@@ -1,8 +1,11 @@
-import { BadgeCheck, LayoutDashboard, Mail, Receipt, ScrollText, Settings, Shield, User, Users } from 'lucide-react';
+import { BadgeCheck, LayoutDashboard, Mail, Receipt, ScrollText, Settings, Shield, Store, User, Users } from 'lucide-react';
 import { createBrowserRouter } from 'react-router';
 import { AccountOverviewPage } from '@/features/account/AccountOverviewPage';
 import { OrdersPage } from '@/features/account/OrdersPage';
 import { MembershipsPage } from '@/features/admin/memberships/MembershipsPage';
+import { MerchantAdminDetailPage } from '@/features/admin/merchants/MerchantAdminDetailPage';
+import { MerchantsAdminPage } from '@/features/admin/merchants/MerchantsAdminPage';
+import { MerchantApplyPage } from '@/features/merchants/MerchantApplyPage';
 import { OrdersAdminPage } from '@/features/admin/orders/OrdersAdminPage';
 import { CheckoutResultPage } from '@/features/membership/CheckoutResultPage';
 import { MembershipPage } from '@/features/membership/MembershipPage';
@@ -30,6 +33,7 @@ const accountNav: NavItem[] = [
   { to: '/account/membership', label: 'Membership', icon: BadgeCheck },
   { to: '/account/orders', label: 'Orders', icon: Receipt },
   { to: '/account/profile', label: 'Profile', icon: User },
+  { to: '/merchant/apply', label: 'For businesses', icon: Store },
 ];
 
 const adminNav: NavItem[] = [
@@ -37,6 +41,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/users', label: 'Users', icon: Users, perm: 'users.read' },
   { to: '/admin/memberships', label: 'Memberships', icon: BadgeCheck, perm: 'memberships.read' },
   { to: '/admin/orders', label: 'Orders', icon: Receipt, perm: 'orders.read' },
+  { to: '/admin/merchants', label: 'Merchants', icon: Store, perm: 'merchants.read' },
   { to: '/admin/roles', label: 'Roles', icon: Shield, perm: 'roles.read' },
   { to: '/admin/settings', label: 'Settings', icon: Settings, perm: 'settings.read' },
   { to: '/admin/audit-log', label: 'Audit log', icon: ScrollText, perm: 'audit.read' },
@@ -64,7 +69,7 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
-      { element: <PublicLayout />, children: [{ path: '/checkout/result', element: <CheckoutResultPage /> }] },
+      { element: <PublicLayout />, children: [{ path: '/checkout/result', element: <CheckoutResultPage /> }, { path: '/merchant/apply', element: <MerchantApplyPage /> }] },
       {
         path: '/account',
         element: <DashboardLayout title="Account" nav={accountNav} />,
@@ -89,6 +94,13 @@ export const router = createBrowserRouter([
               ] },
               { element: <RequirePermission perms={['memberships.read']} />, children: [{ path: 'memberships', element: <MembershipsPage /> }] },
               { element: <RequirePermission perms={['orders.read']} />, children: [{ path: 'orders', element: <OrdersAdminPage /> }] },
+              {
+                element: <RequirePermission perms={['merchants.read']} />,
+                children: [
+                  { path: 'merchants', element: <MerchantsAdminPage /> },
+                  { path: 'merchants/:id', element: <MerchantAdminDetailPage /> },
+                ],
+              },
               { element: <RequirePermission perms={['roles.read']} />, children: [{ path: 'roles', element: <RolesPage /> }] },
               { element: <RequirePermission perms={['settings.read']} />, children: [{ path: 'settings', element: <SettingsPage /> }] },
               { element: <RequirePermission perms={['audit.read']} />, children: [{ path: 'audit-log', element: <AuditLogPage /> }] },

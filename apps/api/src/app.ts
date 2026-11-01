@@ -9,7 +9,9 @@ import { errorHandler, notFound } from './core/errors.js';
 import { adminUsersRouter } from './modules/admin-users/index.js';
 import { auditRouter } from './modules/audit/index.js';
 import { authRouter } from './modules/auth/index.js';
+import { filesRouter } from './modules/files/index.js';
 import { membershipRouter } from './modules/membership/index.js';
+import { merchantsRouter } from './modules/merchants/index.js';
 import { ordersRouter } from './modules/orders/index.js';
 import { fakeGatewayRouter, paymentsRouter } from './modules/payments/index.js';
 import { emailAdminRouter } from './modules/notifications/index.js';
@@ -45,6 +47,8 @@ export function createApp() {
   api.use(membershipRouter);
   api.use(ordersRouter);
   api.use(paymentsRouter);
+  api.use(filesRouter);
+  api.use(merchantsRouter);
   if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);

@@ -67,3 +67,13 @@ export function currentUser(req: Request): RequestUser {
   if (!req.user) throw new AppError('UNAUTHENTICATED', 401, 'Please sign in');
   return req.user;
 }
+
+/** Like requireAuth, but lets anonymous requests through with no user. */
+export const optionalAuth: RequestHandler = async (req, _res, next) => {
+  const header = req.header('authorization') ?? '';
+  if (!header.startsWith('Bearer ')) return next();
+  const claims = await verifyAccessToken(header.slice(7));
+  const user = claims ? await loadRequestUser(BigInt(claims.sub)) : null;
+  if (user && user.status !== 'SUSPENDED') req.user = user;
+  next();
+};
