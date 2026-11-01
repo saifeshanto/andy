@@ -6,15 +6,21 @@
  */
 import { db, disconnectDb } from '../src/core/db.js';
 import { runJob } from '../src/jobs/runner.js';
-import { jobs } from '../src/jobs/registry.js';
+import { jobs, tickJobs } from '../src/jobs/registry.js';
 
+// "tick" runs every regular job in turn, so hPanel needs a single cron line (every 5 minutes).
 const name = process.argv[2];
-if (!name || !jobs[name]) {
-  console.error(`Usage: cron <job>\nJobs: ${Object.keys(jobs).join(', ')}`);
+if (!name || (name !== 'tick' && !jobs[name])) {
+  console.error(`Usage: cron <job|tick>\nJobs: ${Object.keys(jobs).join(', ')}`);
   process.exit(1);
 }
 
-const result = await runJob(db(), name, 'cli');
-console.log(JSON.stringify(result));
+const names = name === 'tick' ? tickJobs : [name];
+let failed = false;
+for (const job of names) {
+  const result = await runJob(db(), job, 'cli');
+  console.log(JSON.stringify({ job, ...result }));
+  if (result.status === 'FAILED') failed = true;
+}
 await disconnectDb();
-process.exit(result.status === 'FAILED' ? 1 : 0);
+process.exit(failed ? 1 : 0);

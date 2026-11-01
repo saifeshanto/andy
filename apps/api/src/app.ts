@@ -1,10 +1,20 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler, notFound } from './core/errors.js';
+import { adminUsersRouter } from './modules/admin-users/index.js';
+import { auditRouter } from './modules/audit/index.js';
+import { authRouter } from './modules/auth/index.js';
+import { membershipRouter } from './modules/membership/index.js';
+import { ordersRouter } from './modules/orders/index.js';
+import { fakeGatewayRouter, paymentsRouter } from './modules/payments/index.js';
+import { emailAdminRouter } from './modules/notifications/index.js';
+import { rbacRouter } from './modules/rbac/index.js';
+import { settingsRouter } from './modules/settings/index.js';
 import { internalRouter, systemRouter } from './modules/system/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -21,10 +31,21 @@ export function createApp() {
   app.set('trust proxy', 1);
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
+  app.use(cookieParser());
 
   const api = express.Router();
   api.use(systemRouter);
   api.use(internalRouter);
+  api.use(authRouter);
+  api.use(settingsRouter);
+  api.use(adminUsersRouter);
+  api.use(rbacRouter);
+  api.use(auditRouter);
+  api.use(emailAdminRouter);
+  api.use(membershipRouter);
+  api.use(ordersRouter);
+  api.use(paymentsRouter);
+  if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);
 

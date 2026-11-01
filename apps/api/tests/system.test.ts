@@ -14,6 +14,22 @@ beforeEach(async () => {
   await db().setting.deleteMany();
 });
 
+describe('tick', () => {
+  it('runs every regular job via HTTP', async () => {
+    const res = await request(app).post('/api/v1/internal/cron/tick').set('x-cron-secret', SECRET);
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((r: { job: string }) => r.job)).toEqual([
+      'heartbeat',
+      'reconcile-payments',
+      'expire-orders',
+      'expire-memberships',
+      'membership-reminders',
+      'send-emails',
+      'cleanup-tokens',
+    ]);
+  });
+});
+
 afterAll(async () => {
   await disconnectDb();
 });
