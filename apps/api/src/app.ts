@@ -20,6 +20,7 @@ import { emailAdminRouter } from './modules/notifications/index.js';
 import { rbacRouter } from './modules/rbac/index.js';
 import { settingsRouter } from './modules/settings/index.js';
 import { internalRouter, systemRouter } from './modules/system/index.js';
+import { vouchersRouter } from './modules/vouchers/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,6 +56,7 @@ export function createApp() {
   api.use(categoriesRouter);
   api.use(listingsRouter);
   api.use(marketplaceRouter);
+  api.use(vouchersRouter);
   if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);

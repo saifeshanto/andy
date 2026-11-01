@@ -1,6 +1,7 @@
 import { cleanupTokensJob } from './cleanup-tokens.js';
 import { expireMembershipsJob } from './expire-memberships.js';
 import { expireOrdersJob } from './expire-orders.js';
+import { expireVouchersJob } from './expire-vouchers.js';
 import { heartbeatJob } from './heartbeat.js';
 import { membershipRemindersJob } from './membership-reminders.js';
 import { reconcilePaymentsJob } from './reconcile-payments.js';
@@ -9,7 +10,7 @@ import type { Job } from './types.js';
 
 /** Every cron job must be registered here. */
 export const jobs: Record<string, Job> = Object.fromEntries(
-  [heartbeatJob, reconcilePaymentsJob, expireOrdersJob, expireMembershipsJob, membershipRemindersJob, sendEmailsJob, cleanupTokensJob].map((j) => [j.name, j]),
+  [heartbeatJob, reconcilePaymentsJob, expireOrdersJob, expireMembershipsJob, expireVouchersJob, membershipRemindersJob, sendEmailsJob, cleanupTokensJob].map((j) => [j.name, j]),
 );
 
 /**
@@ -21,6 +22,7 @@ export const tickJobs = [
   reconcilePaymentsJob.name,
   expireOrdersJob.name,
   expireMembershipsJob.name,
+  expireVouchersJob.name,
   membershipRemindersJob.name,
   sendEmailsJob.name,
   cleanupTokensJob.name,

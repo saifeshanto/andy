@@ -178,5 +178,34 @@ export const listingTemplates = {
   },
 };
 
-export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates, ...merchantStaffTemplates, ...listingTemplates };
+const myt = (d: Date) => new Intl.DateTimeFormat('en-MY', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kuala_Lumpur' }).format(new Date(d));
+
+export const voucherTemplates = {
+  voucherApproved(x: { name: string; title: string; merchantPublicId: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/${x.merchantPublicId}/vouchers`;
+    return {
+      subject: `Approved: ${x.title}`,
+      html: layout(`Hi ${x.name}, your voucher is live`, p(`"${x.title}" has been approved. Members can now claim it.`) + button(url, 'View vouchers')),
+      text: `Hi ${x.name},\n\n"${x.title}" has been approved. Members can now claim it.\n${url}\n`,
+    };
+  },
+  voucherRejected(x: { name: string; title: string; note: string; merchantPublicId: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/${x.merchantPublicId}/vouchers`;
+    return {
+      subject: `Not approved: ${x.title}`,
+      html: layout(`Hi ${x.name}, a voucher needs changes`, p(`We could not approve "${x.title}".`) + noteBlock(x.note) + button(url, 'Edit voucher')),
+      text: `Hi ${x.name},\n\nWe could not approve "${x.title}".\n${x.note}\n${url}\n`,
+    };
+  },
+  voucherRedeemed(x: { name: string; title: string; merchant: string; outlet: string; at: Date }): RenderedEmail {
+    const url = `${env().APP_URL}/account/vouchers?tab=used`;
+    return {
+      subject: `Voucher used: ${x.title}`,
+      html: layout(`Hi ${x.name}, your voucher was used`, p(`"${x.title}" was redeemed at ${x.merchant} (${x.outlet}) on ${myt(x.at)}.`) + p('If this was not you, reply to this email or contact us straight away.') + button(url, 'My vouchers')),
+      text: `Hi ${x.name},\n\n"${x.title}" was redeemed at ${x.merchant} (${x.outlet}) on ${myt(x.at)}.\nIf this was not you, contact us straight away.\n${url}\n`,
+    };
+  },
+};
+
+export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates, ...merchantStaffTemplates, ...listingTemplates, ...voucherTemplates };
 export type TemplateKey = keyof typeof allTemplates;

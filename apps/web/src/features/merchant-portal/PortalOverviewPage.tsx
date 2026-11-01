@@ -1,3 +1,4 @@
+import { ScanLine } from 'lucide-react';
 import { Link } from 'react-router';
 import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -20,6 +21,12 @@ export function PortalOverviewPage() {
       <PageHeader title={merchant.name} description={`You are signed in as ${role.toLowerCase()}.`} actions={<Badge tone={merchantStatusTone[merchant.status]}>{merchantStatusLabel[merchant.status]}</Badge>} />
       {merchant.status === 'SUSPENDED' && (
         <div className="mb-4"><Alert tone="danger">This business is suspended and hidden from the marketplace.{merchant.reviewNote ? ` ${merchant.reviewNote}` : ''} Contact us to reinstate it.</Alert></div>
+      )}
+      {can('vouchers.redeem') && merchant.status === 'APPROVED' && (
+        <Link to={`${base}/redeem`} className="mb-4 flex min-h-16 items-center gap-3 rounded-card bg-ink-950 px-5 py-4 text-white shadow-card hover:bg-ink-800">
+          <ScanLine className="size-7 text-accent-500" aria-hidden />
+          <span><span className="block font-semibold">Redeem a voucher</span><span className="text-sm text-white/70">Scan a member’s QR code or type the code</span></span>
+        </Link>
       )}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tiles.map((t) => (

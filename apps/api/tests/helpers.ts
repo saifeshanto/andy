@@ -12,6 +12,10 @@ export const PASSWORD = 'correct-horse-9';
 /** Empties every table (children first) and re-syncs roles. */
 export async function resetDb() {
   const d = db();
+  await d.voucherRedemption.deleteMany();
+  await d.voucher.deleteMany();
+  await d.voucherCampaignOutlet.deleteMany();
+  await d.voucherCampaign.deleteMany();
   await d.listingRevision.deleteMany();
   await d.listingOutlet.deleteMany();
   await d.listingImage.deleteMany();

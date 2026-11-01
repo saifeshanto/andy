@@ -1,6 +1,6 @@
 import type { MerchantAction, MerchantRoleKey } from '@andy/shared';
 import { useQuery } from '@tanstack/react-query';
-import { LayoutDashboard, MapPin, Package, Store, Users } from 'lucide-react';
+import { History, LayoutDashboard, MapPin, Package, ScanLine, Store, Ticket, Users } from 'lucide-react';
 import { createContext, useContext } from 'react';
 import { Navigate, useParams } from 'react-router';
 import { Alert } from '@/components/ui/Alert';
@@ -44,7 +44,10 @@ export function MerchantPortalLayout() {
   const can = (a: MerchantAction) => q.data.actions.includes(a);
   const nav: (NavItem & { need?: MerchantAction })[] = [
     { to: base, label: 'Overview', icon: LayoutDashboard, end: true },
+    { to: `${base}/redeem`, label: 'Redeem voucher', icon: ScanLine, need: 'vouchers.redeem' },
+    { to: `${base}/redemptions`, label: 'Redemptions', icon: History, need: 'vouchers.redeem' },
     { to: `${base}/listings`, label: 'Listings', icon: Package, need: 'listings.read' },
+    { to: `${base}/vouchers`, label: 'Vouchers', icon: Ticket, need: 'vouchers.manage' },
     { to: `${base}/outlets`, label: 'Outlets', icon: MapPin, need: 'listings.read' },
     { to: `${base}/staff`, label: 'Staff', icon: Users, need: 'staff.manage' },
     { to: `${base}/profile`, label: 'Business profile', icon: Store, need: 'profile.edit' },

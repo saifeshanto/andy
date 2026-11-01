@@ -4,6 +4,9 @@ import { Link, useParams } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
+import { useAuth } from '@/features/auth/AuthProvider';
+import type { PublicVoucher } from '@/features/vouchers/types';
+import { VoucherCard } from '@/features/vouchers/VoucherCard';
 import { api } from '@/lib/api';
 import { ListingCard } from './ListingCard';
 import { mapsUrl, type ListingCardData, type MerchantCard, type Outlet } from './types';
@@ -12,7 +15,13 @@ type Detail = MerchantCard & { businessType: string; description: string | null;
 
 export function MerchantPage() {
   const { slug = '' } = useParams();
+  const { status } = useAuth();
   const q = useQuery({ queryKey: ['public', 'merchant', slug], queryFn: () => api<{ data: Detail }>(`/public/merchants/${encodeURIComponent(slug)}`).then((r) => r.data), retry: false });
+  const vouchers = useQuery({
+    queryKey: ['public', 'vouchers', 'merchant', slug, status],
+    queryFn: () => api<{ data: PublicVoucher[] }>(`/public/vouchers?merchant=${encodeURIComponent(slug)}&pageSize=12`).then((r) => r.data),
+    enabled: status !== 'loading',
+  });
   if (q.isLoading) return <Spinner />;
   if (q.isError || !q.data) {
     return (
@@ -41,6 +50,12 @@ export function MerchantPage() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[2fr_1fr]">
         <div>
           {m.description && <p className="mb-8 whitespace-pre-line text-ink-700">{m.description}</p>}
+          {vouchers.data && vouchers.data.length > 0 && (
+            <section className="mb-10">
+              <h2 className="font-display text-2xl font-bold uppercase">Vouchers</h2>
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2">{vouchers.data.map((v) => <li key={v.id}><VoucherCard v={v} /></li>)}</ul>
+            </section>
+          )}
           <h2 className="font-display text-2xl font-bold uppercase">Products and services</h2>
           <div className="mt-4">
             {m.listings.length === 0 ? <EmptyState title="Nothing listed yet" /> : <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">{m.listings.map((l) => <ListingCard key={l.id} l={l} />)}</div>}
