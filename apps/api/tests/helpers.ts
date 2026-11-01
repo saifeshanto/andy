@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { db } from '../src/core/db.js';
+import { ensureDefaultCategories } from '../src/modules/catalog/index.js';
 import { ensureDefaultPlan } from '../src/modules/membership/index.js';
 import { syncRbac } from '../src/modules/rbac/index.js';
 
@@ -40,6 +41,7 @@ export async function resetDb() {
   await d.setting.deleteMany();
   await syncRbac(d);
   await ensureDefaultPlan(d);
+  await ensureDefaultCategories(d);
 }
 
 /** Pulls the raw token out of the newest queued email to that address. */

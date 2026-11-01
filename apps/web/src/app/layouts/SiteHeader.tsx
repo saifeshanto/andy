@@ -9,21 +9,27 @@ export function SiteHeader() {
         <Link to="/" className="font-display text-xl font-bold uppercase tracking-wide">
           Andy <span className="text-accent-400">Auto Club</span>
         </Link>
-        <nav className="flex items-center gap-2 text-sm font-semibold">
+        <nav className="flex items-center gap-1 text-sm font-semibold sm:gap-2">
+          <Link to="/marketplace" className="rounded-full px-3 py-2 hover:bg-white/10">
+            Marketplace
+          </Link>
+          <Link to="/merchants" className="hidden rounded-full px-3 py-2 hover:bg-white/10 sm:inline-flex">
+            Merchants
+          </Link>
           {status === 'signed-in' && user ? (
             <>
               {can('admin.access') && (
-                <Link to="/admin" className="rounded-full px-3 py-2 hover:bg-white/10">
+                <Link to="/admin" className="hidden rounded-full px-3 py-2 hover:bg-white/10 sm:inline-flex">
                   Admin
                 </Link>
               )}
               <Link to="/account" className="rounded-full bg-white/10 px-4 py-2 hover:bg-white/20">
-                My account
+                Account
               </Link>
             </>
           ) : status === 'signed-out' ? (
             <>
-              <Link to="/login" className="rounded-full px-3 py-2 hover:bg-white/10">
+              <Link to="/login" className="hidden rounded-full px-3 py-2 hover:bg-white/10 sm:inline-flex">
                 Sign in
               </Link>
               <Link to="/register" className="rounded-full bg-accent-500 px-4 py-2 hover:bg-accent-600">

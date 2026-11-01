@@ -1,4 +1,4 @@
-import { BadgeCheck, LayoutDashboard, Mail, Receipt, ScrollText, Settings, Shield, Store, User, Users } from 'lucide-react';
+import { BadgeCheck, ClipboardCheck, LayoutDashboard, Tags, Mail, Receipt, ScrollText, Settings, Shield, Store, User, Users } from 'lucide-react';
 import { createBrowserRouter } from 'react-router';
 import { AccountOverviewPage } from '@/features/account/AccountOverviewPage';
 import { OrdersPage } from '@/features/account/OrdersPage';
@@ -13,6 +13,15 @@ import { MerchantPortalLayout } from '@/features/merchant-portal/PortalContext';
 import { PortalOverviewPage } from '@/features/merchant-portal/PortalOverviewPage';
 import { PortalProfilePage } from '@/features/merchant-portal/ProfilePage';
 import { StaffPage } from '@/features/merchant-portal/StaffPage';
+import { ListingEditorPage } from '@/features/merchant-portal/ListingEditorPage';
+import { ListingsPage } from '@/features/merchant-portal/ListingsPage';
+import { CategoriesPage } from '@/features/admin/listings/CategoriesPage';
+import { ListingApprovalsPage } from '@/features/admin/listings/ListingApprovalsPage';
+import { ListingReviewPage } from '@/features/admin/listings/ListingReviewPage';
+import { ListingPage } from '@/features/marketplace/ListingPage';
+import { MarketplacePage } from '@/features/marketplace/MarketplacePage';
+import { MerchantPage } from '@/features/marketplace/MerchantPage';
+import { MerchantsPage } from '@/features/marketplace/MerchantsPage';
 import { OrdersAdminPage } from '@/features/admin/orders/OrdersAdminPage';
 import { CheckoutResultPage } from '@/features/membership/CheckoutResultPage';
 import { MembershipPage } from '@/features/membership/MembershipPage';
@@ -49,6 +58,8 @@ const adminNav: NavItem[] = [
   { to: '/admin/memberships', label: 'Memberships', icon: BadgeCheck, perm: 'memberships.read' },
   { to: '/admin/orders', label: 'Orders', icon: Receipt, perm: 'orders.read' },
   { to: '/admin/merchants', label: 'Merchants', icon: Store, perm: 'merchants.read' },
+  { to: '/admin/listings', label: 'Listing approvals', icon: ClipboardCheck, perm: 'listings.review' },
+  { to: '/admin/categories', label: 'Categories', icon: Tags, perm: 'catalog.manage' },
   { to: '/admin/roles', label: 'Roles', icon: Shield, perm: 'roles.read' },
   { to: '/admin/settings', label: 'Settings', icon: Settings, perm: 'settings.read' },
   { to: '/admin/audit-log', label: 'Audit log', icon: ScrollText, perm: 'audit.read' },
@@ -61,6 +72,10 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/status', element: <StatusPage /> },
+      { path: '/marketplace', element: <MarketplacePage /> },
+      { path: '/products/:slug', element: <ListingPage /> },
+      { path: '/merchants', element: <MerchantsPage /> },
+      { path: '/merchants/:slug', element: <MerchantPage /> },
     ],
   },
   {
@@ -90,6 +105,9 @@ export const router = createBrowserRouter([
         element: <MerchantPortalLayout />,
         children: [
           { index: true, element: <PortalOverviewPage /> },
+          { path: 'listings', element: <ListingsPage /> },
+          { path: 'listings/new', element: <ListingEditorPage /> },
+          { path: 'listings/:listingId', element: <ListingEditorPage /> },
           { path: 'outlets', element: <OutletsPage /> },
           { path: 'staff', element: <StaffPage /> },
           { path: 'profile', element: <PortalProfilePage /> },
@@ -124,8 +142,11 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'merchants', element: <MerchantsAdminPage /> },
                   { path: 'merchants/:id', element: <MerchantAdminDetailPage /> },
+                  { path: 'listings/:id', element: <ListingReviewPage /> },
                 ],
               },
+              { element: <RequirePermission perms={['listings.review']} />, children: [{ path: 'listings', element: <ListingApprovalsPage /> }] },
+              { element: <RequirePermission perms={['catalog.manage']} />, children: [{ path: 'categories', element: <CategoriesPage /> }] },
               { element: <RequirePermission perms={['roles.read']} />, children: [{ path: 'roles', element: <RolesPage /> }] },
               { element: <RequirePermission perms={['settings.read']} />, children: [{ path: 'settings', element: <SettingsPage /> }] },
               { element: <RequirePermission perms={['audit.read']} />, children: [{ path: 'audit-log', element: <AuditLogPage /> }] },

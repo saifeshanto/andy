@@ -2,6 +2,7 @@ import { env } from './config/env.js';
 import { createApp } from './app.js';
 import { db, disconnectDb } from './core/db.js';
 import { logger } from './core/logger.js';
+import { ensureDefaultCategories } from './modules/catalog/index.js';
 import { ensureDefaultPlan } from './modules/membership/index.js';
 import { syncRbac } from './modules/rbac/index.js';
 
@@ -11,6 +12,7 @@ const server = createApp().listen(PORT, () => {
   // Keep the site up even if the DB is down at boot; /status will show the problem.
   syncRbac(db())
     .then(() => ensureDefaultPlan(db()))
+    .then(() => ensureDefaultCategories(db()))
     .catch((err) => logger.error({ err }, 'Startup sync failed (will retry on next start)'));
 });
 

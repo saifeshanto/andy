@@ -9,6 +9,7 @@ import { errorHandler, notFound } from './core/errors.js';
 import { adminUsersRouter } from './modules/admin-users/index.js';
 import { auditRouter } from './modules/audit/index.js';
 import { authRouter } from './modules/auth/index.js';
+import { categoriesRouter, listingsRouter, marketplaceRouter } from './modules/catalog/index.js';
 import { filesRouter } from './modules/files/index.js';
 import { membershipRouter } from './modules/membership/index.js';
 import { portalRouter } from './modules/merchant-portal/index.js';
@@ -51,6 +52,9 @@ export function createApp() {
   api.use(filesRouter);
   api.use(merchantsRouter);
   api.use(portalRouter);
+  api.use(categoriesRouter);
+  api.use(listingsRouter);
+  api.use(marketplaceRouter);
   if (env().PAYMENT_PROVIDER === 'fake') api.use(fakeGatewayRouter);
   api.use(notFound);
   app.use('/api/v1', api);

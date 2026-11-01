@@ -159,5 +159,24 @@ export const merchantStaffTemplates = {
   },
 };
 
-export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates, ...merchantStaffTemplates };
+export const listingTemplates = {
+  listingApproved(x: { name: string; title: string; merchantPublicId: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/${x.merchantPublicId}/listings`;
+    return {
+      subject: `Approved: ${x.title}`,
+      html: layout(`Hi ${x.name}, your listing is live`, p(`"${x.title}" has been approved and is now shown in the marketplace.`) + button(url, 'View listings')),
+      text: `Hi ${x.name},\n\n"${x.title}" has been approved and is now shown in the marketplace.\n${url}\n`,
+    };
+  },
+  listingRejected(x: { name: string; title: string; note: string; merchantPublicId: string }): RenderedEmail {
+    const url = `${env().APP_URL}/merchant/${x.merchantPublicId}/listings`;
+    return {
+      subject: `Not approved: ${x.title}`,
+      html: layout(`Hi ${x.name}, a listing needs changes`, p(`We could not approve "${x.title}" (or its latest changes).`) + noteBlock(x.note) + button(url, 'Edit listing')),
+      text: `Hi ${x.name},\n\nWe could not approve "${x.title}" (or its latest changes).\n${x.note}\n${url}\n`,
+    };
+  },
+};
+
+export const allTemplates = { ...templates, ...membershipTemplates, ...merchantTemplates, ...merchantStaffTemplates, ...listingTemplates };
 export type TemplateKey = keyof typeof allTemplates;

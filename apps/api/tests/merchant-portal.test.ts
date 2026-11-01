@@ -71,8 +71,9 @@ describe('profile and outlets', () => {
     const { owner } = await approvedMerchant();
     const bad = await request(app).post(`${P}/outlets`).set(bearer(owner)).send({ name: 'PJ', addressLine1: '2 Jalan', city: 'PJ', state: 'Narnia', postcode: '4' });
     expect(bad.status).toBe(400);
-    const ok = await request(app).post(`${P}/outlets`).set(bearer(owner)).send({ name: 'PJ', addressLine1: '2 Jalan SS2', city: 'Petaling Jaya', state: 'Selangor', postcode: '47300' });
+    const ok = await request(app).post(`${P}/outlets`).set(bearer(owner)).send({ name: 'PJ', addressLine1: '2 Jalan SS2', city: 'Petaling Jaya', state: 'Selangor', postcode: '47300', hours: 'Isnin–Sabtu 9 pagi–6 petang 🚗' });
     expect(ok.status).toBe(201);
+    expect((await db().merchantOutlet.findFirstOrThrow({ where: { name: 'PJ' } })).hours).toBe('Isnin–Sabtu 9 pagi–6 petang 🚗');
     await request(app).patch(`${P}/outlets/${ok.body.data.id}`).set(bearer(owner)).send({ isActive: false }).expect(200);
     const list = await request(app).get(`${P}/outlets`).set(bearer(owner));
     expect(list.body.data.map((o: { name: string; isActive: boolean }) => [o.name, o.isActive])).toEqual([['Main', true], ['PJ', false]]);
